@@ -1,0 +1,42 @@
+{
+  "name": "crm-soporte-v1",
+  "version": "1.0.0",
+  "description": "Plataforma interna de gestión de soporte técnico diseñada para centralizar, registrar y dar seguimiento a las solicitudes de asistencia de los clientes. El sistema permite organizar el flujo de atencion mediante un modilo de tickets, asegurando para que cada incidencia quede documentada.",
+  "keywords": [
+    "crm",
+    "soporte",
+    "tickets"
+  ],
+  "homepage": "https://github.com/DrawNess/crm-soporte-v1#readme",
+  "bugs": {
+    "url": "https://github.com/DrawNess/crm-soporte-v1/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/DrawNess/crm-soporte-v1.git"
+  },
+  "license": "ISC",
+  "author": "Nestor Calle",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "start": "node index.js",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.2.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-n": "^17.24.0",
+    "globals": "^17.4.0",
+    "nodemon": "^3.1.14",
+    "prettier": "^3.8.1"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
