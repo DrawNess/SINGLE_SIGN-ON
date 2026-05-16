@@ -12,6 +12,8 @@ const {
 const { hashPassword, verifyPassword } = require('../utils/hash');
 const tokenService = require('./token.service');
 const auditService = require('./audit.service');
+const verificationService = require('./verification.service');
+const emailService = require('./email.service');
 const { HttpError } = require('../middleware/errorHandler');
 const config = require('../config/env');
 
@@ -82,14 +84,13 @@ async function register(input, { req, application }) {
 
   const t = await sequelize.transaction();
   let user;
+  let emailToken;
   try {
     user = await User.create(
       {
         email: input.email,
         password_hash: passwordHash,
-        // Status 'active' temporal — cambiar a 'pending' cuando se implemente
-        // verificación de email/SMS en próxima iteración.
-        status: 'active',
+        status: 'pending',
         password_changed_at: new Date(),
       },
       { transaction: t }
@@ -121,10 +122,30 @@ async function register(input, { req, application }) {
       { transaction: t }
     );
 
+    // Emite token de verificación de email dentro de la misma TX
+    const issued = await verificationService.issueEmailToken({
+      userId: user.id,
+      email: user.email,
+      transaction: t,
+    });
+    emailToken = issued.plain;
+
     await t.commit();
   } catch (err) {
     await t.rollback();
     throw err;
+  }
+
+  // Enviar email FUERA de la transacción (no debe romper registro)
+  try {
+    await emailService.sendVerificationEmail({
+      to: user.email,
+      firstName: input.first_name,
+      token: emailToken,
+    });
+  } catch (err) {
+    console.error('[register] envío email falló:', err.message);
+    // No throw — registro ya está OK, usuario puede pedir resend.
   }
 
   await auditService.log({

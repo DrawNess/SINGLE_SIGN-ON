@@ -62,13 +62,13 @@ Header:
 - 48 bytes aleatorios base64url-safe.
 - Almacenados como **SHA-256 hex** en `refresh_tokens.token_hash`. Nunca en plano.
 - TTL configurable (`JWT_REFRESH_TTL_DAYS`, default 7 días).
-- Rotación obligatoria en cada uso (`/auth/refresh` revoca el viejo y emite uno nuevo).
+- Rotación obligatoria en cada uso (`/api/v1/auth/refresh` revoca el viejo y emite uno nuevo).
 
 ### Family + detección de robo
 
 Cada login crea un `family_id` UUID v7. Todas las rotaciones del mismo flujo comparten ese `family_id`.
 
-Cuando se llama `/auth/refresh`:
+Cuando se llama `/api/v1/auth/refresh`:
 
 ```
 si token.revoked_at IS NOT NULL  →  ALGUIEN MÁS YA LO USÓ
@@ -103,9 +103,9 @@ Si activas cookie httpOnly para refresh, añade protección CSRF:
 
 | Endpoint | Límite |
 |---|---|
-| `POST /auth/login` | 5/min por IP+email |
-| `POST /auth/register` | 10/hora por IP |
-| `POST /auth/forgot-password` | 3/hora por email |
+| `POST /api/v1/auth/login` | 5/min por IP+email |
+| `POST /api/v1/auth/register` | 10/hora por IP |
+| `POST /api/v1/auth/forgot-password` | 3/hora por email |
 
 Configurable en `.env`:
 ```
@@ -183,10 +183,10 @@ Solo orígenes en `CORS_ORIGINS` del `.env` (coma-separados) pueden hacer reques
 
 ## Anti-enumeración
 
-`POST /auth/login` devuelve el **mismo error genérico** para:
+`POST /api/v1/auth/login` devuelve el **mismo error genérico** para:
 - Email no existe
 - Password incorrecta
 
 Esto impide al atacante saber si un email está registrado.
 
-`POST /auth/forgot-password` (próxima iteración) devolverá `200 OK` siempre, exista o no el email.
+`POST /api/v1/auth/forgot-password` (próxima iteración) devolverá `200 OK` siempre, exista o no el email.

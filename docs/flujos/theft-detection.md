@@ -110,7 +110,7 @@ Este evento debe alertar al usuario por email (notificación de seguridad — pa
 
 1. **Doble request del cliente legítimo**: cliente envía 2x el refresh por bug de retry. La primera rota OK. La segunda dispara teft.
 
-   **Mitigación**: el cliente debe garantizar idempotencia en `/auth/refresh` (no retry sin esperar respuesta).
+   **Mitigación**: el cliente debe garantizar idempotencia en `/api/v1/auth/refresh` (no retry sin esperar respuesta).
 
 2. **Race condition**: cliente con 2 pestañas refresca al mismo tiempo. Una gana, la otra falla.
 

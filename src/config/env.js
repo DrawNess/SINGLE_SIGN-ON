@@ -44,6 +44,17 @@ const schema = Joi.object({
   MAIL_FROM_NAME: Joi.string().default('GEMMATEX SSO'),
   MAIL_FROM_EMAIL: Joi.string().email().required(),
 
+  // URLs para links de email — deben contener {token}
+  EMAIL_VERIFY_URL_TEMPLATE: Joi.string()
+    .pattern(/\{token\}/)
+    .default('http://localhost:2106/api/v1/auth/verify-email?token={token}'),
+  EMAIL_CHANGE_URL_TEMPLATE: Joi.string()
+    .pattern(/\{token\}/)
+    .default('http://localhost:2106/api/v1/auth/confirm-email-change?token={token}'),
+  EMAIL_RESET_URL_TEMPLATE: Joi.string()
+    .pattern(/\{token\}/)
+    .default('http://localhost:2106/api/v1/auth/reset-password?token={token}'),
+
   // SMS
   SMS_PROVIDER: Joi.string().valid('twilio', 'mock').default('mock'),
   SMS_FROM: Joi.string().default(''),
@@ -142,6 +153,9 @@ module.exports = {
     password: value.MAIL_PASSWORD,
     fromName: value.MAIL_FROM_NAME,
     fromEmail: value.MAIL_FROM_EMAIL,
+    verifyUrlTemplate: value.EMAIL_VERIFY_URL_TEMPLATE,
+    changeUrlTemplate: value.EMAIL_CHANGE_URL_TEMPLATE,
+    resetUrlTemplate: value.EMAIL_RESET_URL_TEMPLATE,
   },
 
   sms: {

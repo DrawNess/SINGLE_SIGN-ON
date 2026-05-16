@@ -2,6 +2,8 @@
 
 Endpoint público que expone la clave pública RSA usada para firmar JWT.
 
+⚠ **NO** está bajo `/api/v1/`. La ruta `.well-known/jwks.json` es un **estándar** ([RFC 8615](https://datatracker.ietf.org/doc/html/rfc8615) + [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517)) — vive en la raíz del servidor por convención. Las libs JWT modernas (jose, jsonwebtoken) la buscan ahí por defecto.
+
 ## GET `/.well-known/jwks.json`
 
 **Sin autenticación**. Cualquier microservicio puede consumirla.
@@ -110,8 +112,8 @@ Estándar OIDC también define `/.well-known/openid-configuration`:
 {
   "issuer": "https://sso.gemmatex.com",
   "jwks_uri": "https://sso.gemmatex.com/.well-known/jwks.json",
-  "token_endpoint": "https://sso.gemmatex.com/auth/login",
-  "authorization_endpoint": "https://sso.gemmatex.com/auth/authorize",
+  "token_endpoint": "https://sso.gemmatex.com/api/v1/auth/login",
+  "authorization_endpoint": "https://sso.gemmatex.com/api/v1/auth/authorize",
   ...
 }
 ```

@@ -42,8 +42,8 @@ Microservicio independiente que **centraliza la autenticación** para todas las 
 
 | Tipo | Quién | Cómo |
 |---|---|---|
-| **Login con email + password** | Personas (cliente, admin, staff) | `POST /auth/login` → JWT |
-| **OAuth (futuro)** | Personas, vía Google/Facebook | `POST /auth/oauth/google` |
+| **Login con email + password** | Personas (cliente, admin, staff) | `POST /api/v1/auth/login` → JWT |
+| **OAuth (futuro)** | Personas, vía Google/Facebook | `POST /api/v1/auth/oauth/google` |
 | **API key** | Servicios (Tickets-backend, etc.) | Header `Authorization: Bearer sk_live_...` |
 
 ## Distribución de identidad
@@ -58,7 +58,7 @@ Otros microservicios descargan la pública una vez, la cachean, y **validan JWT 
 
 ## Identificación de la app que origina la auth
 
-Cada request a `/auth/register` o `/auth/login` debe llevar el header:
+Cada request a `/api/v1/auth/register` o `/api/v1/auth/login` debe llevar el header:
 
 ```
 X-Client-Id: app_ecommerce_dev
@@ -87,7 +87,7 @@ El SSO sigue principios OAuth 2.0 / OIDC pero **no implementa el flujo completo 
 
 | OAuth 2.0 estándar | SSO GEMMATEX MVP |
 |---|---|
-| `/authorize` + `/token` | `/auth/login` directo |
+| `/authorize` + `/token` | `/api/v1/auth/login` directo |
 | `code → token` exchange | Login devuelve tokens directo |
 | Redirect URIs | Reservado en schema, no usado aún |
 | Discovery endpoint | Solo JWKS |

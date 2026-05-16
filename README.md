@@ -73,6 +73,10 @@ npm run dev
 
 Servidor en http://localhost:2106.
 
+- API versionada: `http://localhost:2106/api/v1/auth/*`
+- Health: `http://localhost:2106/health`
+- JWKS: `http://localhost:2106/.well-known/jwks.json`
+
 ## Scripts útiles
 
 | Comando | Descripción |

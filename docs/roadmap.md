@@ -19,79 +19,86 @@ Funcionalidad pendiente, ordenada por prioridad.
 - ✅ Helmet + CORS
 - ✅ Soft delete users/applications
 - ✅ Trigger automático `updated_at`
+- ✅ **Verificación de email + cambio de email** (paso 3B)
+- ✅ Status `pending` → `active` tras verify
+- ✅ Anti-enumeración en resend
+- ✅ Plantillas HTML email
+- ✅ Dev log fallback sin SMTP
 
 ## Próximos pasos
 
-### Paso 3B — Verificación de email
+### Paso 3B — Verificación de email ✅ COMPLETADO
 
-- [ ] Service `email.service.js` (nodemailer + plantillas)
-- [ ] Endpoint `POST /auth/verify-email` con token del email
-- [ ] Endpoint `POST /auth/resend-verification`
-- [ ] Endpoint `POST /auth/change-email` (autenticado)
-- [ ] Cambiar register a `status='pending'`
-- [ ] Bloquear login si email no verificado
-- [ ] Plantilla HTML del email (verificación + reset)
+- [x] Service `email.service.js` (nodemailer + plantillas)
+- [x] Endpoint `GET/POST /api/v1/auth/verify-email` con token del email
+- [x] Endpoint `POST /api/v1/auth/resend-verification`
+- [x] Endpoint `POST /api/v1/auth/change-email` (autenticado)
+- [x] Endpoint `GET /api/v1/auth/confirm-email-change`
+- [x] Cambiar register a `status='pending'`
+- [x] Bloquear login si email no verificado
+- [x] Plantilla HTML del email (verificación + cambio)
+- [x] Dev log fallback de emails
 
 ### Paso 3C — Verificación SMS
 
 - [ ] Service `sms.service.js` con drivers `mock` y `twilio`
-- [ ] Endpoint `POST /auth/verify-phone` (con código 6 dígitos)
-- [ ] Endpoint `POST /auth/resend-phone-code`
-- [ ] Endpoint `POST /auth/change-phone` (autenticado)
+- [ ] Endpoint `POST /api/v1/auth/verify-phone` (con código 6 dígitos)
+- [ ] Endpoint `POST /api/v1/auth/resend-phone-code`
+- [ ] Endpoint `POST /api/v1/auth/change-phone` (autenticado)
 - [ ] Activar `status='active'` solo si email + phone verificados
 
 ### Paso 3D — Password management
 
-- [ ] Endpoint `POST /auth/forgot-password` (envía email con link)
-- [ ] Endpoint `POST /auth/reset-password` (consume token)
-- [ ] Endpoint `POST /auth/change-password` (autenticado)
+- [ ] Endpoint `POST /api/v1/auth/forgot-password` (envía email con link)
+- [ ] Endpoint `POST /api/v1/auth/reset-password` (consume token)
+- [ ] Endpoint `POST /api/v1/auth/change-password` (autenticado)
 - [ ] Aplicar `password_history` check (no reusar últimas 5)
 - [ ] Revocar todos refresh tokens al cambiar password
 - [ ] Email de notificación tras cambio password
 
 ### Paso 3E — 2FA TOTP
 
-- [ ] Endpoint `POST /auth/2fa/setup` → genera secret + QR code
-- [ ] Endpoint `POST /auth/2fa/enable` → confirma con código TOTP
-- [ ] Endpoint `POST /auth/2fa/disable` → requiere password
-- [ ] Endpoint `POST /auth/2fa/verify` durante login si `totp_enabled=true`
+- [ ] Endpoint `POST /api/v1/auth/2fa/setup` → genera secret + QR code
+- [ ] Endpoint `POST /api/v1/auth/2fa/enable` → confirma con código TOTP
+- [ ] Endpoint `POST /api/v1/auth/2fa/disable` → requiere password
+- [ ] Endpoint `POST /api/v1/auth/2fa/verify` durante login si `totp_enabled=true`
 - [ ] Backup codes (códigos de un solo uso)
 - [ ] Cifrar `totp_secret` en DB (AES-256-GCM)
 
 ### Paso 3F — API keys (service-to-service)
 
 - [ ] Middleware `apiKey.js` que detecta prefijo `sk_` en Authorization
-- [ ] Endpoint `POST /admin/applications/:id/api-keys` (crear)
-- [ ] Endpoint `GET /admin/applications/:id/api-keys` (listar)
-- [ ] Endpoint `DELETE /admin/api-keys/:id` (revocar)
-- [ ] Endpoint `/internal/users/:id` consumido por otros micros con API key
+- [ ] Endpoint `POST /api/v1/admin/applications/:id/api-keys` (crear)
+- [ ] Endpoint `GET /api/v1/admin/applications/:id/api-keys` (listar)
+- [ ] Endpoint `DELETE /api/v1/admin/api-keys/:id` (revocar)
+- [ ] Endpoint `/api/v1/internal/users/:id` consumido por otros micros con API key
 - [ ] Sistema de scopes (`users:read`, `users:list`, etc.)
 
 ### Paso 3G — Endpoints Admin
 
-- [ ] `GET /admin/users` (lista paginada, filtros)
-- [ ] `GET /admin/users/:id`
-- [ ] `PATCH /admin/users/:id` (cambiar status, roles)
-- [ ] `DELETE /admin/users/:id` (soft delete)
-- [ ] `POST /admin/invitations` (invitar staff)
-- [ ] `GET /admin/audit-logs` (vista del registro)
-- [ ] `POST /admin/applications` (crear app)
-- [ ] `GET /admin/applications`
-- [ ] `PATCH /admin/applications/:id`
+- [ ] `GET /api/v1/admin/users` (lista paginada, filtros)
+- [ ] `GET /api/v1/admin/users/:id`
+- [ ] `PATCH /api/v1/admin/users/:id` (cambiar status, roles)
+- [ ] `DELETE /api/v1/admin/users/:id` (soft delete)
+- [ ] `POST /api/v1/admin/invitations` (invitar staff)
+- [ ] `GET /api/v1/admin/audit-logs` (vista del registro)
+- [ ] `POST /api/v1/admin/applications` (crear app)
+- [ ] `GET /api/v1/admin/applications`
+- [ ] `PATCH /api/v1/admin/applications/:id`
 
 ### Paso 3H — OAuth providers (Google, Facebook)
 
-- [ ] Endpoint `GET /auth/oauth/:provider` (inicia flow)
-- [ ] Endpoint `GET /auth/oauth/:provider/callback`
-- [ ] Endpoint `POST /auth/oauth/link` (vincular cuenta existente)
-- [ ] Endpoint `POST /auth/oauth/unlink`
+- [ ] Endpoint `GET /api/v1/auth/oauth/:provider` (inicia flow)
+- [ ] Endpoint `GET /api/v1/auth/oauth/:provider/callback`
+- [ ] Endpoint `POST /api/v1/auth/oauth/link` (vincular cuenta existente)
+- [ ] Endpoint `POST /api/v1/auth/oauth/unlink`
 - [ ] Cifrar tokens del provider en `auth_providers.access_token_enc`
 
 ### Paso 3I — Cookie httpOnly para refresh
 
 - [ ] Detección de `application.type='spa-web'`
 - [ ] Setear refresh en cookie `Secure + HttpOnly + SameSite=Strict`
-- [ ] Endpoint `/auth/refresh` lee de cookie si presente
+- [ ] Endpoint `/api/v1/auth/refresh` lee de cookie si presente
 - [ ] CSRF protection (token doble-submit)
 
 ## Futuro lejano

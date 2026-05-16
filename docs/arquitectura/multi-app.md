@@ -53,7 +53,7 @@ CHECK (
 
 ## Cómo se identifica la app
 
-Cada request a `/auth/register`, `/auth/login` lleva header:
+Cada request a `/api/v1/auth/register`, `/api/v1/auth/login` lleva header:
 
 ```
 X-Client-Id: app_ecommerce_dev
@@ -106,7 +106,7 @@ Cliente loguea en e-commerce → recibe `aud: ecommerce`. Luego entra a tickets:
 
 **Opción A**: re-loguea en tickets (cookie session por dominio).
 
-**Opción B (futuro)**: SSO endpoint `/auth/exchange` que con un token válido para `ecommerce` emite uno equivalente para `tickets` (sin re-loguear, sin password). Esto es el flujo OAuth completo.
+**Opción B (futuro)**: SSO endpoint `/api/v1/auth/exchange` que con un token válido para `ecommerce` emite uno equivalente para `tickets` (sin re-loguear, sin password). Esto es el flujo OAuth completo.
 
 MVP usa opción A.
 
@@ -137,7 +137,7 @@ El `client_secret` de Tickets se imprime UNA VEZ en la consola al correr el seed
 
 En prod, el seed dev NO se corre. Las apps se crean via:
 
-- Endpoint admin `POST /admin/applications` (a construir en paso 3G), **o**
+- Endpoint admin `POST /api/v1/admin/applications` (a construir en paso 3G), **o**
 - SQL manual con `client_secret` hasheado a mano.
 
 `client_secret` real debería ser:

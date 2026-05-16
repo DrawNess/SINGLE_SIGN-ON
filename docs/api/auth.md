@@ -2,7 +2,9 @@
 
 Base URL: `http://localhost:2106` (dev) → `https://sso.gemmatex.com` (prod).
 
-Todos los endpoints `/auth/*` aceptan/devuelven JSON (`Content-Type: application/json`).
+Versionado bajo `/api/v1/`. Todos los endpoints aceptan/devuelven JSON (`Content-Type: application/json`).
+
+> ⚠ Los endpoints `/.well-known/jwks.json` y `/health` NO están versionados — viven en la raíz (ver [well-known](./well-known.md)).
 
 ## Headers comunes
 
@@ -14,7 +16,7 @@ Todos los endpoints `/auth/*` aceptan/devuelven JSON (`Content-Type: application
 
 ---
 
-## POST `/auth/register`
+## POST `/api/v1/auth/register`
 
 Crea un nuevo cliente (rol `client`).
 
@@ -76,7 +78,7 @@ X-Client-Id: app_ecommerce_dev
 }
 ```
 
-⚠ La respuesta **no incluye tokens**. El cliente debe llamar a `/auth/login` después.
+⚠ La respuesta **no incluye tokens**. El cliente debe llamar a `/api/v1/auth/login` después.
 
 ### Errores
 - `400 ValidationError` — datos inválidos (Joi)
@@ -88,7 +90,7 @@ X-Client-Id: app_ecommerce_dev
 
 ---
 
-## POST `/auth/login`
+## POST `/api/v1/auth/login`
 
 Autentica con email + password. Devuelve par access + refresh.
 
@@ -145,7 +147,7 @@ X-Client-Id: app_ecommerce_dev
 
 ---
 
-## POST `/auth/refresh`
+## POST `/api/v1/auth/refresh`
 
 Rota el refresh token. El viejo queda revocado con `revoked_reason='rotation'`. Devuelve par nuevo.
 
@@ -157,7 +159,7 @@ Rota el refresh token. El viejo queda revocado con `revoked_reason='rotation'`. 
 ```
 
 ### Respuesta 200
-Mismo formato que `/auth/login`.
+Mismo formato que `/api/v1/auth/login`.
 
 ### Errores
 - `400 ValidationError`
@@ -167,7 +169,7 @@ Mismo formato que `/auth/login`.
 
 ---
 
-## POST `/auth/logout`
+## POST `/api/v1/auth/logout`
 
 Revoca el refresh token. Requiere `Authorization` con access token válido.
 
@@ -198,7 +200,7 @@ Sin body.
 
 ---
 
-## GET `/auth/me`
+## GET `/api/v1/auth/me`
 
 Devuelve datos del usuario autenticado.
 
@@ -234,20 +236,122 @@ Authorization: Bearer <access_token>
 
 ---
 
+---
+
+## POST `/api/v1/auth/verify-email` · GET `/api/v1/auth/verify-email`
+
+Consume el token enviado por email para activar la cuenta (registro) o cambiar el email (mode `email_change`).
+
+Soporta **GET con query string** (click directo en el link del correo) y **POST con body JSON** (para SPA que extrae el token del query).
+
+### GET — link directo
+```
+GET /api/v1/auth/verify-email?token=W0VK8B-mKwRZucTxayqDj2HGnVQfZ4_5-...
+```
+
+### POST — desde frontend
+```json
+{ "token": "W0VK8B-mKwRZucTxayqDj2HGnVQfZ4_5-..." }
+```
+
+### Respuesta 200
+```json
+{
+  "message": "Email verificado. Tu cuenta está activa.",
+  "mode": "registration"
+}
+```
+
+| Campo | Valor |
+|---|---|
+| `mode` | `registration` (primera vez) o `email_change` (cambio de email) |
+
+Tras `mode='email_change'`, el SSO revoca **todos los refresh tokens** del usuario por seguridad — debe re-loguear con el nuevo email.
+
+### Errores
+- `400 InvalidToken` — token no encontrado
+- `400 TokenAlreadyUsed` — token ya usado
+- `400 TokenExpired` — token expirado (TTL `EMAIL_VERIFY_TTL_HOURS`, default 24h)
+- `409 EmailInUse` — solo en `email_change`: el nuevo email se tomó entre el request y la confirmación
+
+---
+
+## GET `/api/v1/auth/confirm-email-change`
+
+Alias semántico de `GET /api/v1/auth/verify-email` para el flujo de cambio de email. Mismo comportamiento.
+
+```
+GET /api/v1/auth/confirm-email-change?token=...
+```
+
+---
+
+## POST `/api/v1/auth/resend-verification`
+
+Reenvía el email de verificación a un correo pendiente. Anti-enumeración: siempre responde 200, exista o no el email.
+
+### Body
+```json
+{ "email": "maria.lopez@test.bo" }
+```
+
+### Respuesta 200
+```json
+{
+  "message": "Si el correo está registrado y pendiente de verificación, recibirás un nuevo email."
+}
+```
+
+Tokens anteriores activos para ese user quedan invalidados (marcados con `used_at`).
+
+---
+
+## POST `/api/v1/auth/change-email`
+
+Inicia el cambio de email. Requiere autenticación + password actual. Envía email a la NUEVA dirección.
+
+### Headers
+```
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+### Body
+```json
+{
+  "new_email": "maria.nueva@test.bo",
+  "current_password": "Segura123"
+}
+```
+
+### Respuesta 200
+```json
+{
+  "message": "Te enviamos un correo a la nueva dirección. Confirma para completar el cambio."
+}
+```
+
+El cambio NO toma efecto hasta que el user confirme via `/confirm-email-change` con el token del email.
+
+### Errores
+- `400 BadRequest` — `new_email` igual al actual
+- `401 Unauthorized` — sin/inválido access token
+- `401 InvalidPassword` — password actual incorrecta
+- `409 EmailInUse` — nuevo email ya registrado por otro
+
+---
+
 ## Próximos endpoints (no implementados aún)
 
 | Endpoint | Paso |
 |---|---|
-| `POST /auth/verify-email` | 3B |
-| `POST /auth/resend-verification` | 3B |
-| `POST /auth/verify-phone` | 3C |
-| `POST /auth/forgot-password` | 3D |
-| `POST /auth/reset-password` | 3D |
-| `POST /auth/change-password` | 3D |
-| `POST /auth/change-email` | 3D |
-| `POST /auth/2fa/setup` | 3E |
-| `POST /auth/2fa/enable` | 3E |
-| `POST /auth/2fa/disable` | 3E |
-| `POST /auth/oauth/google` | 3H |
+| `POST /api/v1/auth/verify-phone` | 3C |
+| `POST /api/v1/auth/forgot-password` | 3D |
+| `POST /api/v1/auth/reset-password` | 3D |
+| `POST /api/v1/auth/change-password` | 3D |
+| `POST /api/v1/auth/2fa/setup` | 3E |
+| `POST /api/v1/auth/2fa/enable` | 3E |
+| `POST /api/v1/auth/2fa/disable` | 3E |
+| `POST /api/v1/auth/oauth/google` | 3H |
 
 Ver: [Roadmap](../roadmap.md).

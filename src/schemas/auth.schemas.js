@@ -44,4 +44,30 @@ const logout = Joi.object({
   all_devices: Joi.boolean().optional().default(false),
 });
 
-module.exports = { register, login, refresh, logout };
+const verifyEmailBody = Joi.object({
+  token: Joi.string().min(20).max(200).required(),
+});
+
+const verifyEmailQuery = Joi.object({
+  token: Joi.string().min(20).max(200).required(),
+});
+
+const resendVerification = Joi.object({
+  email: email.required(),
+});
+
+const changeEmail = Joi.object({
+  new_email: email.required(),
+  current_password: Joi.string().required(),
+});
+
+module.exports = {
+  register,
+  login,
+  refresh,
+  logout,
+  verifyEmailBody,
+  verifyEmailQuery,
+  resendVerification,
+  changeEmail,
+};

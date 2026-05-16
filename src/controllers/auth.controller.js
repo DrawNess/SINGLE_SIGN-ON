@@ -1,6 +1,9 @@
 'use strict';
 
 const authService = require('../services/auth.service');
+const verificationService = require('../services/verification.service');
+const { User } = require('../db/models');
+const { HttpError } = require('../middleware/errorHandler');
 
 async function register(req, res, next) {
   try {
@@ -73,4 +76,62 @@ async function me(req, res, next) {
   }
 }
 
-module.exports = { register, login, refresh, logout, me };
+async function verifyEmail(req, res, next) {
+  try {
+    const token = req.body?.token || req.query?.token;
+    if (!token) throw new HttpError(400, 'BadRequest', 'token requerido');
+    const { mode } = await verificationService.consumeToken(token, { req });
+    res.json({
+      message:
+        mode === 'email_change'
+          ? 'Email cambiado correctamente. Inicia sesión nuevamente.'
+          : 'Email verificado. Tu cuenta está activa.',
+      mode,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function resendVerification(req, res, next) {
+  try {
+    await verificationService.resendRegistrationVerification(req.body.email, { req });
+    // Respuesta genérica anti-enumeración
+    res.json({
+      message:
+        'Si el correo está registrado y pendiente de verificación, recibirás un nuevo email.',
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function changeEmail(req, res, next) {
+  try {
+    const user = await User.findByPk(req.auth.userId);
+    if (!user) throw new HttpError(404, 'NotFound', 'Usuario no encontrado');
+    await verificationService.startEmailChange({
+      user,
+      newEmail: req.body.new_email,
+      currentPassword: req.body.current_password,
+      req,
+    });
+    res.json({
+      message:
+        'Te enviamos un correo a la nueva dirección. Confirma para completar el cambio.',
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = {
+  register,
+  login,
+  refresh,
+  logout,
+  me,
+  verifyEmail,
+  resendVerification,
+  changeEmail,
+};

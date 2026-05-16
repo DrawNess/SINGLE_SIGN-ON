@@ -75,11 +75,11 @@ Tickets pregunta al SSO. Pero no como usuario → como servicio. Usa **API key**
 ### Flujo
 
 ```
-Tickets backend                          SSO
-     │                                     │
-     │  GET /internal/users/<id>           │
-     │  Authorization: Bearer sk_live_...  │
-     │ ────────────────────────────────►  │
+Tickets backend                                      SSO
+     │                                                 │
+     │  GET /api/v1/internal/users/<id>                │
+     │  Authorization: Bearer sk_live_...              │
+     │ ──────────────────────────────────────────►    │
      │                                     │
      │                              detect prefix sk_
      │                              sha256(key) lookup
@@ -90,13 +90,13 @@ Tickets backend                          SSO
      │ ◄────────────────────────────────  │
 ```
 
-**Endpoint `/internal/users/:id` no está implementado todavía** (paso 3F). Pero el schema y middleware estarán listos.
+**Endpoint `/api/v1/internal/users/:id` no está implementado todavía** (paso 3F). Pero el schema y middleware estarán listos.
 
 ### API key obtenida
 
 Super_admin crea una API key:
 ```bash
-POST /admin/applications/<tickets_app_id>/api-keys
+POST /api/v1/admin/applications/<tickets_app_id>/api-keys
 {
   "name": "tickets-backend-prod",
   "scopes": ["users:read", "users:list"]
@@ -125,7 +125,7 @@ SSO_API_KEY=sk_live_a1b2c3d4_xxxxxxxxxxxxxxxx...
 const SSO_API_KEY = process.env.SSO_API_KEY;
 
 async function fetchUser(userId) {
-  const res = await fetch(`${SSO_URL}/internal/users/${userId}`, {
+  const res = await fetch(`${SSO_URL}/api/v1/internal/users/${userId}`, {
     headers: {
       'Authorization': `Bearer ${SSO_API_KEY}`,
     },

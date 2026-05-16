@@ -19,12 +19,13 @@ Microservicio de Single Sign-On centralizado para las aplicaciones de GEMMATEX (
 - [Claves RS256](./setup/claves-rs256.md) — Generar y rotar par de claves
 
 ### 🌐 API
-- [Auth](./api/auth.md) — Endpoints `/auth/*`
+- [Auth](./api/auth.md) — Endpoints `/api/v1/auth/*`
 - [Well-known](./api/well-known.md) — JWKS endpoint
 
 ### 🔁 Flujos
 - [Registro](./flujos/registro.md)
 - [Login + Refresh](./flujos/login-y-refresh.md)
+- [Verificación de email + cambio de email](./flujos/verificacion-email.md)
 - [Detección de robo de token](./flujos/theft-detection.md)
 
 ### 🔌 Integración
@@ -39,7 +40,7 @@ Microservicio de Single Sign-On centralizado para las aplicaciones de GEMMATEX (
 - **Tablas Postgres** → snake_case plural (`users`, `refresh_tokens`)
 - **Columnas** → snake_case (`password_hash`, `created_at`)
 - **PKs** → UUID v7 generados en app (lib `uuidv7`)
-- **Endpoints** → kebab-case (`/auth/reset-password`)
+- **Endpoints** → kebab-case (`/api/v1/auth/reset-password`)
 - **Joi schemas** → camelCase exports en `src/schemas/`
 
 ## Stack

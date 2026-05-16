@@ -27,6 +27,13 @@ module.exports = function validate(schemas) {
             message: d.message,
           }))
         );
+      } else if (target === 'query') {
+        // Express 5: req.query es getter readonly → usar defineProperty
+        Object.defineProperty(req, 'query', {
+          value,
+          writable: true,
+          configurable: true,
+        });
       } else {
         req[target] = value;
       }

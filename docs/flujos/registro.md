@@ -122,12 +122,12 @@ Por dos razones:
 
 2. **Auditoría limpia**: el endpoint de login registra `auth.login.success` con metadata. Si register también emitiera tokens, tendríamos dos eventos similares pero distintos. Cleaner separar.
 
-El cliente debe llamar `/auth/login` tras `/auth/register`.
+El cliente debe llamar `/api/v1/auth/login` tras `/api/v1/auth/register`.
 
 ## Ejemplo curl
 
 ```bash
-curl -X POST http://localhost:2106/auth/register \
+curl -X POST http://localhost:2106/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -H "X-Client-Id: app_ecommerce_dev" \
   -d '{
