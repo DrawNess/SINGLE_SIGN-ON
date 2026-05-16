@@ -22,7 +22,9 @@ Funcionalidad pendiente, ordenada por prioridad.
 - ✅ **Verificación de email + cambio de email** (paso 3B)
 - ✅ Status `pending` → `active` tras verify
 - ✅ Anti-enumeración en resend
-- ✅ Plantillas HTML email
+- ✅ Plantillas HTML email modulares (archivos `.html` separados)
+- ✅ Hot reload de plantillas en dev
+- ✅ Brand config via `.env` (logo, color, location)
 - ✅ Dev log fallback sin SMTP
 
 ## Próximos pasos

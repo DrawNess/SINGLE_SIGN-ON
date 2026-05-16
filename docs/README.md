@@ -28,6 +28,15 @@ Microservicio de Single Sign-On centralizado para las aplicaciones de GEMMATEX (
 - [Verificación de email + cambio de email](./flujos/verificacion-email.md)
 - [Detección de robo de token](./flujos/theft-detection.md)
 
+### 📧 Emails
+- [Emails — overview](./emails/README.md) — Sistema completo
+- [Plantillas HTML](./emails/plantillas.md) — Estructura y stack
+- [Placeholders](./emails/placeholders.md) — Variables por plantilla
+- [Editar / hot reload](./emails/editar.md) — Workflow de edición
+- [Crear nueva plantilla](./emails/nueva-plantilla.md) — Paso a paso
+- [SMTP + troubleshooting](./emails/smtp.md) — Config y errores comunes
+- [Frontend integration](./emails/frontend-integration.md) — Portal `account.gemmatex.com.bo`
+
 ### 🔌 Integración
 - [Cómo consumir el SSO desde otros microservicios](./integracion/otros-microservicios.md)
 

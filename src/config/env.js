@@ -43,17 +43,26 @@ const schema = Joi.object({
   MAIL_PASSWORD: Joi.string().required(),
   MAIL_FROM_NAME: Joi.string().default('GEMMATEX SSO'),
   MAIL_FROM_EMAIL: Joi.string().email().required(),
+  MAIL_LOGO_URL: Joi.string()
+    .uri()
+    .default('https://peru-crane-813567.hostingersite.com/Logos/Logo%20gemmatex%20azul.png'),
+  // Acepta con o sin `#` (en .env el `#` es comentario si no está quoted).
+  MAIL_BRAND_COLOR: Joi.string()
+    .pattern(/^#?[0-9a-fA-F]{3,8}$/)
+    .default('#0b5ed7'),
+  MAIL_FOOTER_LOCATION: Joi.string().default('La Paz – Bolivia'),
 
-  // URLs para links de email — deben contener {token}
+  // URLs del FRONTEND para links de email. Deben contener {token}.
+  // En prod: https://account.gemmatex.com.bo/...
   EMAIL_VERIFY_URL_TEMPLATE: Joi.string()
     .pattern(/\{token\}/)
-    .default('http://localhost:2106/api/v1/auth/verify-email?token={token}'),
+    .default('http://localhost:3000/verify-email?token={token}'),
   EMAIL_CHANGE_URL_TEMPLATE: Joi.string()
     .pattern(/\{token\}/)
-    .default('http://localhost:2106/api/v1/auth/confirm-email-change?token={token}'),
+    .default('http://localhost:3000/confirm-email-change?token={token}'),
   EMAIL_RESET_URL_TEMPLATE: Joi.string()
     .pattern(/\{token\}/)
-    .default('http://localhost:2106/api/v1/auth/reset-password?token={token}'),
+    .default('http://localhost:3000/reset-password?token={token}'),
 
   // SMS
   SMS_PROVIDER: Joi.string().valid('twilio', 'mock').default('mock'),
@@ -153,6 +162,11 @@ module.exports = {
     password: value.MAIL_PASSWORD,
     fromName: value.MAIL_FROM_NAME,
     fromEmail: value.MAIL_FROM_EMAIL,
+    logoUrl: value.MAIL_LOGO_URL,
+    brandColor: value.MAIL_BRAND_COLOR.startsWith('#')
+      ? value.MAIL_BRAND_COLOR
+      : '#' + value.MAIL_BRAND_COLOR,
+    footerLocation: value.MAIL_FOOTER_LOCATION,
     verifyUrlTemplate: value.EMAIL_VERIFY_URL_TEMPLATE,
     changeUrlTemplate: value.EMAIL_CHANGE_URL_TEMPLATE,
     resetUrlTemplate: value.EMAIL_RESET_URL_TEMPLATE,

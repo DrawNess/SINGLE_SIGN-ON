@@ -1,5 +1,8 @@
 # Flujo — Verificación de email
 
+> Para detalle de plantillas HTML, placeholders y SMTP, ver [docs/emails/](../emails/README.md).
+
+
 ## Registro con verificación obligatoria
 
 Tras registrarse, el usuario queda `status='pending'`. NO puede loguear hasta verificar.
@@ -53,24 +56,34 @@ Cliente             SSO
 
 ## Click en el email
 
-El usuario recibe el correo con un link tipo:
+El usuario recibe el correo con un link al **frontend portal**:
 ```
-http://localhost:3000/verify-email?token=W0VK8B-mKwRZucT...
+https://account.gemmatex.com.bo/verify-email?token=W0VK8B-mKwRZucT...
 ```
 (URL configurada via `EMAIL_VERIFY_URL_TEMPLATE`)
 
-Apunta a un frontend que extrae el token y llama:
-```
-POST /api/v1/auth/verify-email
-{ "token": "W0VK8B-mKwRZucT..." }
-```
+El frontend `account.gemmatex.com.bo` (Universal Login pattern, estilo Samsung/Google):
 
-Para dev sin frontend, el template puede apuntar directo a la API:
-```
-http://localhost:2106/api/v1/auth/verify-email?token=...
-```
+1. Extrae `?token=` del query
+2. Muestra spinner "Verificando..."
+3. Llama al SSO API:
+   ```
+   POST https://sso.gemmatex.com.bo/api/v1/auth/verify-email
+   Body: { "token": "W0VK8B-mKwRZucT..." }
+   ```
+4. Muestra "✓ Cuenta activada" + redirige a `/login`
 
-GET y POST ambos funcionan.
+Detalle completo en [docs/emails/frontend-integration.md](../emails/frontend-integration.md).
+
+### Workaround para dev sin frontend
+
+Si aún no tienes el frontend portal:
+- Default `.env` apunta a `http://localhost:3000` (asume Vite dev en otro repo).
+- O override temporal en `.env`:
+  ```
+  EMAIL_VERIFY_URL_TEMPLATE=http://localhost:2106/api/v1/auth/verify-email?token={token}
+  ```
+  → link del email pega directo a la API (GET funciona). Solo dev.
 
 ## Servicio consume el token
 
@@ -190,3 +203,9 @@ Si `MAIL_USER` / `MAIL_PASSWORD` están vacíos o el servidor SMTP no responde:
 - Útil para test sin necesidad de SMTP real.
 
 En producción, sin SMTP funcional, el registro queda OK pero el usuario NO recibe el email → bloqueado. Garantiza que SMTP funcione antes de desplegar.
+
+## Ver también
+
+- [docs/emails/](../emails/README.md) — Sistema de plantillas HTML editables
+- [docs/emails/editar.md](../emails/editar.md) — Cómo modificar el copy/diseño del email
+- [docs/emails/smtp.md](../emails/smtp.md) — Troubleshooting de envío
