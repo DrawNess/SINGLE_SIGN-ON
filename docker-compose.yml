@@ -1,0 +1,78 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: sso_gemmatex_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-sso_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-sso_pass}
+      POSTGRES_DB: ${DB_NAME:-sso_gemmatex}
+      TZ: America/La_Paz
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - sso_pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-sso_user} -d ${DB_NAME:-sso_gemmatex}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sso_net
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: sso_gemmatex_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@gemmatex.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+      PGADMIN_LISTEN_PORT: 80
+      PGADMIN_SERVER_JSON_FILE: /tmp/servers.json
+      TZ: America/La_Paz
+      # Credenciales DB inyectadas al entrypoint custom
+      DB_HOST_INTERNAL: postgres
+      DB_PORT_INTERNAL: 5432
+      DB_NAME_INTERNAL: ${DB_NAME:-sso_gemmatex}
+      DB_USER_INTERNAL: ${DB_USER:-sso_user}
+      DB_PASSWORD_INTERNAL: ${DB_PASSWORD:-sso_pass}
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        # 1. Generar pgpass desde env (formato host:port:db:user:password)
+        echo "$$DB_HOST_INTERNAL:$$DB_PORT_INTERNAL:*:$$DB_USER_INTERNAL:$$DB_PASSWORD_INTERNAL" > /tmp/pgpass
+        chmod 600 /tmp/pgpass
+        # 2. Renderizar servers.json desde template con vars del .env
+        sed -e "s|@@DB_HOST@@|$$DB_HOST_INTERNAL|g" \
+            -e "s|@@DB_PORT@@|$$DB_PORT_INTERNAL|g" \
+            -e "s|@@DB_NAME@@|$$DB_NAME_INTERNAL|g" \
+            -e "s|@@DB_USER@@|$$DB_USER_INTERNAL|g" \
+            /tmp/servers.json.tpl > /tmp/servers.json
+        # 3. Lanzar pgAdmin original
+        exec /entrypoint.sh
+    ports:
+      - "${PGADMIN_PORT:-8080}:80"
+    volumes:
+      - sso_pgadmin_data:/var/lib/pgadmin
+      - ./docker/pgadmin/servers.json.tpl:/tmp/servers.json.tpl:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - sso_net
+
+volumes:
+  sso_pgdata:
+    name: sso_gemmatex_pgdata
+  sso_pgadmin_data:
+    name: sso_gemmatex_pgadmin_data
+
+networks:
+  sso_net:
+    name: sso_gemmatex_net
+    driver: bridge

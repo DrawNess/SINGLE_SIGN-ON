@@ -1,6 +1,14 @@
 # Created by https://www.toptal.com/developers/gitignore/api/node,windows,linux,macos
 # Edit at https://www.toptal.com/developers/gitignore?templates=node,windows,linux,macos
 
+### SSO GEMMATEX ###
+# Claves RS256 (jamás commitear)
+src/keys/*.pem
+src/keys/*.key
+# Logs locales
+logs/
+*.log
+
 ### Linux ###
 *~
 

@@ -1,19 +1,22 @@
 {
-  "name": "crm-soporte-v1",
-  "version": "1.0.0",
-  "description": "Plataforma interna de gestión de soporte técnico diseñada para centralizar, registrar y dar seguimiento a las solicitudes de asistencia de los clientes. El sistema permite organizar el flujo de atencion mediante un modilo de tickets, asegurando para que cada incidencia quede documentada.",
+  "name": "sso-gemmatex",
+  "version": "0.1.0",
+  "description": "Single Sign-On microservice para GEMMATEX. Auth centralizado con JWT RS256, JWKS, refresh tokens rotados, 2FA, verificación email/SMS y API keys service-to-service.",
   "keywords": [
-    "crm",
-    "soporte",
-    "tickets"
+    "sso",
+    "auth",
+    "jwt",
+    "jwks",
+    "oauth",
+    "gemmatex"
   ],
-  "homepage": "https://github.com/DrawNess/crm-soporte-v1#readme",
+  "homepage": "https://github.com/DrawNess/Single_Sign_On-GEMMATEX#readme",
   "bugs": {
-    "url": "https://github.com/DrawNess/crm-soporte-v1/issues"
+    "url": "https://github.com/DrawNess/Single_Sign_On-GEMMATEX/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/DrawNess/crm-soporte-v1.git"
+    "url": "git+ssh://git@github.com/DrawNess/Single_Sign_On-GEMMATEX.git"
   },
   "license": "ISC",
   "author": "Nestor Calle",
@@ -22,19 +25,41 @@
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "keys:generate": "node scripts/generate-keys.js",
+    "db:migrate": "sequelize-cli db:migrate",
+    "db:migrate:undo": "sequelize-cli db:migrate:undo",
+    "db:seed": "sequelize-cli db:seed:all",
+    "db:seed:dev": "NODE_ENV=development sequelize-cli db:seed:all --seeders-path src/db/seeders/dev",
+    "db:seed:full-dev": "npm run db:seed && npm run db:seed:dev",
+    "db:reset": "sequelize-cli db:migrate:undo:all && sequelize-cli db:migrate && npm run db:seed:full-dev"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "eslint": "^10.2.0",
+    "eslint": "^10.4.0",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-n": "^17.24.0",
-    "globals": "^17.4.0",
+    "eslint-plugin-n": "^18.0.1",
+    "globals": "^17.6.0",
     "nodemon": "^3.1.14",
-    "prettier": "^3.8.1"
+    "prettier": "^3.8.3",
+    "sequelize-cli": "^6.6.5"
   },
   "dependencies": {
-    "express": "^5.2.1"
+    "argon2": "^0.44.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.5.2",
+    "helmet": "^8.1.0",
+    "joi": "^18.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "nodemailer": "^8.0.7",
+    "otplib": "^13.4.0",
+    "pg": "^8.20.0",
+    "pg-hstore": "^2.3.4",
+    "qrcode": "^1.5.4",
+    "sequelize": "^6.37.8",
+    "uuidv7": "^1.2.1"
   },
   "engines": {
     "node": ">=20.0.0"
