@@ -84,17 +84,26 @@ Decisión: implementar más adelante. Tabla `users.totp_secret` y `totp_enabled`
 - [ ] Endpoint `/api/v1/internal/users/:id` consumido por otros micros con API key
 - [ ] Sistema de scopes (`users:read`, `users:list`, etc.)
 
-### Paso 3G — Endpoints Admin
+### Paso 3G — Endpoints Admin ✅ PARCIAL
 
-- [ ] `GET /api/v1/admin/users` (lista paginada, filtros)
-- [ ] `GET /api/v1/admin/users/:id`
-- [ ] `PATCH /api/v1/admin/users/:id` (cambiar status, roles)
-- [ ] `DELETE /api/v1/admin/users/:id` (soft delete)
-- [ ] `POST /api/v1/admin/invitations` (invitar staff)
-- [ ] `GET /api/v1/admin/audit-logs` (vista del registro)
-- [ ] `POST /api/v1/admin/applications` (crear app)
+Implementado:
+- [x] `GET /api/v1/admin/users` (lista paginada, filtros status/role/q)
+- [x] `GET /api/v1/admin/users/:id` (detalle con profile + roles)
+- [x] `PATCH /api/v1/admin/users/:id` (status, roles, con auto-restricciones)
+- [x] `DELETE /api/v1/admin/users/:id` (soft delete + revoke tokens)
+- [x] `POST /api/v1/admin/users/:id/restore`
+- [x] `GET /api/v1/admin/audit-logs` (lista paginada con filtros)
+- [x] `GET /api/v1/admin/stats` (dashboard counts)
+- [x] Util pagination reusable
+- [x] Permisos diferenciados admin vs super_admin (roles elevados)
+
+Pendiente subpaso 3G.2:
+- [ ] `POST /api/v1/admin/applications` (crear app + client_secret)
 - [ ] `GET /api/v1/admin/applications`
 - [ ] `PATCH /api/v1/admin/applications/:id`
+- [ ] `POST /api/v1/admin/invitations` (invitar staff por email)
+- [ ] `GET /api/v1/admin/sessions` (refresh tokens activos por user)
+- [ ] `DELETE /api/v1/admin/sessions/:id` (force-logout específico)
 
 ### Paso 3H — OAuth providers (Google, Facebook)
 

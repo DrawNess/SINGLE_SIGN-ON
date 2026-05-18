@@ -63,6 +63,9 @@ const schema = Joi.object({
   EMAIL_RESET_URL_TEMPLATE: Joi.string()
     .pattern(/\{token\}/)
     .default('http://localhost:3000/reset-password?token={token}'),
+  EMAIL_INVITATION_URL_TEMPLATE: Joi.string()
+    .pattern(/\{token\}/)
+    .default('http://localhost:3000/accept-invitation?token={token}'),
 
   // SMS
   SMS_PROVIDER: Joi.string().valid('twilio', 'mock').default('mock'),
@@ -170,6 +173,7 @@ module.exports = {
     verifyUrlTemplate: value.EMAIL_VERIFY_URL_TEMPLATE,
     changeUrlTemplate: value.EMAIL_CHANGE_URL_TEMPLATE,
     resetUrlTemplate: value.EMAIL_RESET_URL_TEMPLATE,
+    invitationUrlTemplate: value.EMAIL_INVITATION_URL_TEMPLATE,
   },
 
   sms: {

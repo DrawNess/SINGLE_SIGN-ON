@@ -3,6 +3,7 @@
 const { Router } = require('express');
 
 const authRouter = require('./auth.router');
+const adminRouter = require('./admin.router');
 const wellKnownRouter = require('./well-known.router');
 const healthRouter = require('./health.router');
 
@@ -18,10 +19,10 @@ function routerApi(app) {
   app.use('/api/v1', apiRouter);
 
   apiRouter.use('/auth', authRouter);
+  apiRouter.use('/admin', adminRouter);
 
 
   // TODO próximas iteraciones:
-  // apiRouter.use('/admin', adminRouter);
   // apiRouter.use('/internal', internalRouter);
 }
 

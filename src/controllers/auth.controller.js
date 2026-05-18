@@ -3,6 +3,7 @@
 const authService = require('../services/auth.service');
 const verificationService = require('../services/verification.service');
 const passwordService = require('../services/password.service');
+const invitationService = require('../services/invitation.service');
 const { User } = require('../db/models');
 const { HttpError } = require('../middleware/errorHandler');
 
@@ -172,6 +173,43 @@ async function changePassword(req, res, next) {
   }
 }
 
+async function acceptInvitation(req, res, next) {
+  try {
+    const application = await authService.resolveApplication(
+      req.get('X-Client-Id')
+    );
+    const { user, role } = await invitationService.acceptInvitation({
+      token: req.body.token,
+      password: req.body.password,
+      firstName: req.body.first_name,
+      lastName: req.body.last_name,
+      jobTitle: req.body.job_title,
+      department: req.body.department,
+      phone: req.body.phone,
+      req,
+    });
+
+    // Login automático tras aceptar
+    const tokenService = require('../services/token.service');
+    const roles = [role];
+    const tokens = await tokenService.issueTokenPair({
+      user,
+      roles,
+      application,
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+
+    res.status(201).json({
+      message: 'Invitación aceptada. Cuenta creada.',
+      user: { ...user.toJSON(), roles },
+      ...tokens,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   register,
   login,
@@ -184,4 +222,5 @@ module.exports = {
   forgotPassword,
   resetPassword,
   changePassword,
+  acceptInvitation,
 };

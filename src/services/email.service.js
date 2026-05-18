@@ -113,6 +113,27 @@ Si no fuiste tú, ignora este mensaje.
   return send({ to, subject: 'Confirma el cambio de correo · Gemmatex', html, text });
 }
 
+async function sendInvitationEmail({ to, inviterName, roleName, token }) {
+  const invitationUrl = buildUrl(config.mail.invitationUrlTemplate, token);
+  const html = render('invitation', {
+    inviterName: escapeHtml(inviterName || 'Un administrador'),
+    roleName: escapeHtml(roleName),
+    invitationUrl,
+    ttlDays: config.security.adminInviteTtlDays,
+  });
+  const text = `Hola,
+
+${inviterName || 'Un administrador'} te invitó a Gemmatex con el rol ${roleName}.
+
+Acepta la invitación aquí:
+${invitationUrl}
+
+Este enlace expira en ${config.security.adminInviteTtlDays} días.
+
+— GEMMATEX`;
+  return send({ to, subject: 'Invitación al equipo · Gemmatex', html, text });
+}
+
 async function sendPasswordResetEmail({ to, firstName, token }) {
   const resetUrl = buildUrl(config.mail.resetUrlTemplate, token);
   const html = render('reset', {
@@ -136,5 +157,6 @@ module.exports = {
   sendVerificationEmail,
   sendEmailChangeEmail,
   sendPasswordResetEmail,
+  sendInvitationEmail,
   buildUrl,
 };

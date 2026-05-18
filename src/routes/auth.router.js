@@ -10,6 +10,7 @@ const {
   forgotPasswordLimiter,
 } = require('../middleware/rateLimit');
 const schemas = require('../schemas/auth.schemas');
+const adminSchemas = require('../schemas/admin.schemas');
 
 const router = Router();
 
@@ -85,6 +86,12 @@ router.post('/change-password',
   requireAuth(),
   validate({ body: schemas.changePassword }),
   controller.changePassword
+);
+
+// Aceptar invitación admin/staff (público, token autentica)
+router.post('/accept-invitation',
+  validate({ body: adminSchemas.acceptInvitation }),
+  controller.acceptInvitation
 );
 
 module.exports = router;
