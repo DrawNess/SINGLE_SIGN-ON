@@ -97,13 +97,28 @@ Implementado:
 - [x] Util pagination reusable
 - [x] Permisos diferenciados admin vs super_admin (roles elevados)
 
-Pendiente subpaso 3G.2:
-- [ ] `POST /api/v1/admin/applications` (crear app + client_secret)
-- [ ] `GET /api/v1/admin/applications`
-- [ ] `PATCH /api/v1/admin/applications/:id`
-- [ ] `POST /api/v1/admin/invitations` (invitar staff por email)
-- [ ] `GET /api/v1/admin/sessions` (refresh tokens activos por user)
-- [ ] `DELETE /api/v1/admin/sessions/:id` (force-logout específico)
+### Paso 3G.2 — Admin extra ✅ COMPLETADO
+
+Applications:
+- [x] `POST /api/v1/admin/applications` (crea app + genera client_secret si tipo != spa-web)
+- [x] `GET /api/v1/admin/applications` (paginado, filtros)
+- [x] `GET /api/v1/admin/applications/:id`
+- [x] `PATCH /api/v1/admin/applications/:id`
+- [x] `DELETE /api/v1/admin/applications/:id` (soft delete)
+- [x] `POST /api/v1/admin/applications/:id/rotate-secret`
+
+Invitations:
+- [x] `POST /api/v1/admin/invitations` (envía email branded)
+- [x] `GET /api/v1/admin/invitations` (filtros status)
+- [x] `DELETE /api/v1/admin/invitations/:id` (revoke)
+- [x] `POST /api/v1/auth/accept-invitation` (público, auto-login post-aceptación)
+- [x] Plantilla email `invitation.html`
+- [x] Permisos: solo super_admin puede invitar a admin/super_admin
+
+Sessions:
+- [x] `GET /api/v1/admin/users/:userId/sessions`
+- [x] `DELETE /api/v1/admin/sessions/:id`
+- [x] `DELETE /api/v1/admin/users/:userId/sessions` (revoca todos)
 
 ### Paso 3H — OAuth providers (Google, Facebook)
 

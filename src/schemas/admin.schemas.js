@@ -106,6 +106,34 @@ const invitationIdParam = Joi.object({
 });
 
 // ============================================================
+// API keys
+// ============================================================
+
+const createApiKey = Joi.object({
+  name: Joi.string().trim().min(3).max(100).required(),
+  scopes: Joi.array()
+    .items(Joi.string().valid('users:read', 'users:list', 'applications:read', 'audit:write'))
+    .min(1)
+    .unique()
+    .required(),
+  expires_at: Joi.date().iso().greater('now').optional().allow(null),
+});
+
+const listApiKeys = Joi.object({
+  page: Joi.number().integer().min(1).default(1),
+  page_size: Joi.number().integer().min(1).max(100).default(20),
+  active_only: Joi.boolean().truthy('true').falsy('false').default(false),
+});
+
+const apiKeyIdParam = Joi.object({
+  id: uuidV7.required(),
+});
+
+const appIdAndQuery = Joi.object({
+  appId: uuidV7.required(),
+});
+
+// ============================================================
 // Sessions
 // ============================================================
 
@@ -158,4 +186,9 @@ module.exports = {
   userIdParamSessions,
   sessionIdParam,
   listSessions,
+  // api keys
+  createApiKey,
+  listApiKeys,
+  apiKeyIdParam,
+  appIdAndQuery,
 };

@@ -4,6 +4,7 @@ const adminService = require('../services/admin.service');
 const applicationService = require('../services/application.service');
 const invitationService = require('../services/invitation.service');
 const sessionService = require('../services/session.service');
+const apiKeyService = require('../services/apiKey.service');
 const { parsePagination, paginatedResponse } = require('../utils/pagination');
 
 function userToJson(user) {
