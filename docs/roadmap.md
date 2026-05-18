@@ -64,7 +64,9 @@ Tabla `phone_verifications` queda creada por si se reactiva futuro.
 - [x] Rate limit forgot (3/hora/email)
 - [ ] Email de notificación tras cambio password (futuro)
 
-### Paso 3E — 2FA TOTP
+### Paso 3E — 2FA TOTP ⏸ DIFERIDO
+
+Decisión: implementar más adelante. Tabla `users.totp_secret` y `totp_enabled` ya existen en schema. Pendiente lógica + endpoints:
 
 - [ ] Endpoint `POST /api/v1/auth/2fa/setup` → genera secret + QR code
 - [ ] Endpoint `POST /api/v1/auth/2fa/enable` → confirma con código TOTP
