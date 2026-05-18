@@ -26,6 +26,11 @@ Funcionalidad pendiente, ordenada por prioridad.
 - ✅ Hot reload de plantillas en dev
 - ✅ Brand config via `.env` (logo, color, location)
 - ✅ Dev log fallback sin SMTP
+- ✅ **Forgot / reset / change password** (paso 3D)
+- ✅ Anti-reuso con `password_history` (últimas 5 + actual)
+- ✅ Revoca todos los refresh tokens al cambiar password
+- ✅ Trim history automático
+- ✅ Plantillas premium alineadas (verify, change, reset)
 
 ## Próximos pasos
 
@@ -41,22 +46,23 @@ Funcionalidad pendiente, ordenada por prioridad.
 - [x] Plantilla HTML del email (verificación + cambio)
 - [x] Dev log fallback de emails
 
-### Paso 3C — Verificación SMS
+### Paso 3C — Verificación SMS ❌ CANCELADO
 
-- [ ] Service `sms.service.js` con drivers `mock` y `twilio`
-- [ ] Endpoint `POST /api/v1/auth/verify-phone` (con código 6 dígitos)
-- [ ] Endpoint `POST /api/v1/auth/resend-phone-code`
-- [ ] Endpoint `POST /api/v1/auth/change-phone` (autenticado)
-- [ ] Activar `status='active'` solo si email + phone verificados
+Decidido omitir: Bolivia tiene cobertura limitada de providers SMS (Twilio caro, Entel/Tigo sin integración directa). `phone_verified_at` queda siempre NULL. La columna `phone` sigue NOT NULL en `client_profiles` para órdenes/delivery, pero sin verificación.
 
-### Paso 3D — Password management
+Tabla `phone_verifications` queda creada por si se reactiva futuro.
 
-- [ ] Endpoint `POST /api/v1/auth/forgot-password` (envía email con link)
-- [ ] Endpoint `POST /api/v1/auth/reset-password` (consume token)
-- [ ] Endpoint `POST /api/v1/auth/change-password` (autenticado)
-- [ ] Aplicar `password_history` check (no reusar últimas 5)
-- [ ] Revocar todos refresh tokens al cambiar password
-- [ ] Email de notificación tras cambio password
+### Paso 3D — Password management ✅ COMPLETADO
+
+- [x] Endpoint `POST /api/v1/auth/forgot-password` (envía email con link)
+- [x] Endpoint `POST /api/v1/auth/reset-password` (consume token)
+- [x] Endpoint `POST /api/v1/auth/change-password` (autenticado)
+- [x] Aplicar `password_history` check (no reusar últimas 5)
+- [x] Revocar todos refresh tokens al cambiar password
+- [x] Trim automático de history
+- [x] Anti-enumeración en forgot-password
+- [x] Rate limit forgot (3/hora/email)
+- [ ] Email de notificación tras cambio password (futuro)
 
 ### Paso 3E — 2FA TOTP
 

@@ -7,6 +7,7 @@ const { requireAuth } = require('../middleware/auth');
 const {
   loginLimiter,
   registerLimiter,
+  forgotPasswordLimiter,
 } = require('../middleware/rateLimit');
 const schemas = require('../schemas/auth.schemas');
 
@@ -64,6 +65,26 @@ router.post('/change-email',
   requireAuth(),
   validate({ body: schemas.changeEmail }),
   controller.changeEmail
+);
+
+// Olvidé mi contraseña → envía email con link de reset
+router.post('/forgot-password',
+  forgotPasswordLimiter,
+  validate({ body: schemas.forgotPassword }),
+  controller.forgotPassword
+);
+
+// Reset password con token del email
+router.post('/reset-password',
+  validate({ body: schemas.resetPassword }),
+  controller.resetPassword
+);
+
+// Cambiar password autenticado (sabe la actual)
+router.post('/change-password',
+  requireAuth(),
+  validate({ body: schemas.changePassword }),
+  controller.changePassword
 );
 
 module.exports = router;

@@ -2,6 +2,7 @@
 
 const authService = require('../services/auth.service');
 const verificationService = require('../services/verification.service');
+const passwordService = require('../services/password.service');
 const { User } = require('../db/models');
 const { HttpError } = require('../middleware/errorHandler');
 
@@ -125,6 +126,52 @@ async function changeEmail(req, res, next) {
   }
 }
 
+async function forgotPassword(req, res, next) {
+  try {
+    await passwordService.startForgotPassword(req.body.email, { req });
+    // Respuesta genérica anti-enumeración
+    res.json({
+      message:
+        'Si el correo está registrado, recibirás un email para restablecer tu contraseña.',
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function resetPassword(req, res, next) {
+  try {
+    await passwordService.resetPassword({
+      token: req.body.token,
+      newPassword: req.body.new_password,
+      req,
+    });
+    res.json({
+      message: 'Contraseña actualizada. Inicia sesión con tus nuevas credenciales.',
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function changePassword(req, res, next) {
+  try {
+    const user = await User.findByPk(req.auth.userId);
+    if (!user) throw new HttpError(404, 'NotFound', 'Usuario no encontrado');
+    await passwordService.changePassword({
+      user,
+      currentPassword: req.body.current_password,
+      newPassword: req.body.new_password,
+      req,
+    });
+    res.json({
+      message: 'Contraseña cambiada. Inicia sesión nuevamente en todos tus dispositivos.',
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   register,
   login,
@@ -134,4 +181,7 @@ module.exports = {
   verifyEmail,
   resendVerification,
   changeEmail,
+  forgotPassword,
+  resetPassword,
+  changePassword,
 };

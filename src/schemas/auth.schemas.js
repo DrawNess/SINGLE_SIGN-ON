@@ -61,6 +61,20 @@ const changeEmail = Joi.object({
   current_password: Joi.string().required(),
 });
 
+const forgotPassword = Joi.object({
+  email: email.required(),
+});
+
+const resetPassword = Joi.object({
+  token: Joi.string().min(20).max(200).required(),
+  new_password: password.required(),
+});
+
+const changePassword = Joi.object({
+  current_password: Joi.string().required(),
+  new_password: password.required(),
+});
+
 module.exports = {
   register,
   login,
@@ -70,4 +84,7 @@ module.exports = {
   verifyEmailQuery,
   resendVerification,
   changeEmail,
+  forgotPassword,
+  resetPassword,
+  changePassword,
 };

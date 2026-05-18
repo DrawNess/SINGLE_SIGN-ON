@@ -341,11 +341,108 @@ El cambio NO toma efecto hasta que el user confirme via `/confirm-email-change` 
 
 ---
 
+## POST `/api/v1/auth/forgot-password`
+
+Inicia el flujo de recuperación de contraseña. Envía email con link al frontend (`account.gemmatex.com.bo/reset-password?token=...`).
+
+**Rate limit**: 3/hora por email.
+
+### Body
+```json
+{ "email": "juan.perez@test.bo" }
+```
+
+### Respuesta 200 (siempre, anti-enumeración)
+```json
+{
+  "message": "Si el correo está registrado, recibirás un email para restablecer tu contraseña."
+}
+```
+
+⚠ Responde 200 incluso si el email no existe. Esto previene enumeración de cuentas.
+
+### Errores
+- `400 ValidationError`
+- `429 TooManyRequests`
+
+---
+
+## POST `/api/v1/auth/reset-password`
+
+Consume el token del email y establece nueva contraseña.
+
+### Body
+```json
+{
+  "token": "wT1UUCYez-qpovfbkFXS4ljJE7yAd80Kqz4AcssQB5M",
+  "new_password": "NuevaSegura123"
+}
+```
+
+### Respuesta 200
+```json
+{
+  "message": "Contraseña actualizada. Inicia sesión con tus nuevas credenciales."
+}
+```
+
+Tras éxito:
+- Hash nuevo guardado con Argon2id.
+- Hash viejo movido a `password_history`.
+- **Todos** los refresh tokens revocados con `revoked_reason='password_changed'`.
+- Token consumido (no reusable).
+- audit `auth.password.reset_completed`.
+
+### Errores
+- `400 InvalidToken` — token no existe
+- `400 TokenAlreadyUsed`
+- `400 TokenExpired` — TTL `PASSWORD_RESET_TTL_HOURS` (default 1h)
+- `400 PasswordReused` — coincide con la actual o últimas N (default 5)
+- `400 ValidationError` — password no cumple política (min 8, mayús+minús+num)
+
+---
+
+## POST `/api/v1/auth/change-password`
+
+Cambio de password por usuario autenticado (conoce la actual).
+
+### Headers
+```
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+### Body
+```json
+{
+  "current_password": "Segura123",
+  "new_password": "NuevaSegura456"
+}
+```
+
+### Respuesta 200
+```json
+{
+  "message": "Contraseña cambiada. Inicia sesión nuevamente en todos tus dispositivos."
+}
+```
+
+Mismos efectos que reset-password: revoca refresh tokens, guarda history, audit.
+
+### Errores
+- `401 Unauthorized`
+- `401 InvalidPassword` — current_password incorrecta
+- `400 SamePassword` — nueva igual a actual
+- `400 PasswordReused` — en history
+- `400 ValidationError`
+
+---
+
 ## Próximos endpoints (no implementados aún)
 
 | Endpoint | Paso |
 |---|---|
-| `POST /api/v1/auth/verify-phone` | 3C |
+| ~~`POST /api/v1/auth/verify-phone`~~ | ~~3C~~ — Cancelado (Bolivia, SMS providers limitados) |
 | `POST /api/v1/auth/forgot-password` | 3D |
 | `POST /api/v1/auth/reset-password` | 3D |
 | `POST /api/v1/auth/change-password` | 3D |

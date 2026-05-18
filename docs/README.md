@@ -26,6 +26,7 @@ Microservicio de Single Sign-On centralizado para las aplicaciones de GEMMATEX (
 - [Registro](./flujos/registro.md)
 - [Login + Refresh](./flujos/login-y-refresh.md)
 - [Verificación de email + cambio de email](./flujos/verificacion-email.md)
+- [Reset y cambio de contraseña](./flujos/password-reset.md)
 - [Detección de robo de token](./flujos/theft-detection.md)
 
 ### 📧 Emails
