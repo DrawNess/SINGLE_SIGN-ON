@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Actividad sospechosa detectada · Gemmatex</title>
+</head>
+<body style="margin:0;padding:0;background:#f6f8fc;color:#0f172a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
+
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
+    Detectamos actividad sospechosa en tu cuenta Gemmatex.
+  </div>
+
+  <center style="width:100%;background:#f6f8fc;padding:28px 0;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="620" style="width:620px;max-width:620px;">
+      <tr>
+        <td style="padding:0 18px;">
+
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"
+                 style="background:#ffffff;border-radius:16px;border:1px solid #e7eef9;overflow:hidden;">
+
+            <!-- Top bar rojo de alerta -->
+            <tr>
+              <td style="height:4px;background:#dc2626;"></td>
+            </tr>
+
+            <tr>
+              <td style="padding:22px 22px 8px 22px;text-align:center;">
+                <img src="{{logoUrl}}" width="170" alt="Gemmatex" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none;max-width:100%;height:auto;">
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:0 22px 6px 22px;text-align:center;">
+                <div style="font-size:12px;color:#dc2626;letter-spacing:.14em;text-transform:uppercase;font-weight:700;">
+                  ⚠ Alerta de seguridad
+                </div>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:10px 22px 18px 22px;">
+                <h1 style="margin:0 0 10px 0;font-size:20px;line-height:1.3;color:#0f172a;text-align:left;">
+                  Detectamos actividad sospechosa
+                </h1>
+
+                <p style="margin:0 0 12px 0;font-size:14px;line-height:1.65;color:#334155;">
+                  Hola {{firstName}},
+                </p>
+
+                <p style="margin:0 0 16px 0;font-size:14px;line-height:1.65;color:#334155;">
+                  Detectamos un intento de uso de una sesión <strong>ya rotada</strong> en tu cuenta. Esto suele indicar que alguien más tiene acceso a tus credenciales de sesión.
+                </p>
+
+                <p style="margin:0 0 16px 0;font-size:14px;line-height:1.65;color:#334155;">
+                  Por seguridad <strong>cerramos todas tus sesiones activas</strong>. Tendrás que volver a iniciar sesión.
+                </p>
+
+                <!-- Datos del intento -->
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"
+                       style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;margin:8px 0 16px 0;">
+                  <tr>
+                    <td style="padding:12px 14px;">
+                      <p style="margin:0 0 4px 0;font-size:12px;color:#7f1d1d;text-transform:uppercase;letter-spacing:.08em;font-weight:700;">
+                        Detalle del incidente
+                      </p>
+                      <p style="margin:0;font-size:13px;line-height:1.6;color:#1f2937;">
+                        <strong>Fecha:</strong> {{when}}<br>
+                        <strong>IP:</strong> {{ip}}<br>
+                        <strong>Dispositivo:</strong> {{userAgent}}
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+
+                <p style="margin:16px 0 12px 0;font-size:14px;line-height:1.65;color:#334155;">
+                  <strong>Recomendaciones inmediatas:</strong>
+                </p>
+                <ol style="margin:0 0 16px 20px;padding:0;font-size:14px;line-height:1.7;color:#334155;">
+                  <li>Cambia tu contraseña ahora.</li>
+                  <li>Revisa tus dispositivos conectados.</li>
+                  <li>Si no fuiste tú, contacta a soporte.</li>
+                </ol>
+
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="border-radius:12px;background:#dc2626;">
+                      <a href="{{resetUrl}}" target="_blank"
+                         style="display:inline-block;padding:12px 16px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:12px;">
+                        Cambiar contraseña
+                      </a>
+                    </td>
+                    <td style="width:8px;"></td>
+                    <td style="border-radius:12px;background:#ffffff;border:1px solid {{brandColor}};">
+                      <a href="{{sessionsUrl}}" target="_blank"
+                         style="display:inline-block;padding:11px 16px;font-size:14px;font-weight:700;color:{{brandColor}};text-decoration:none;border-radius:12px;">
+                        Ver mis sesiones
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:0 22px;">
+                <div style="height:1px;background:#eef2f7;"></div>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:14px 22px 18px 22px;">
+                <p style="margin:0;font-size:12px;line-height:1.6;color:#64748b;">
+                  Si fuiste tú y reconoces este intento (por ejemplo, refrescaste una pestaña vieja), puedes ignorar este aviso e iniciar sesión nuevamente.
+                </p>
+                <p style="margin:10px 0 0 0;font-size:11px;line-height:1.6;color:#94a3b8;">
+                  &copy; {{year}} Gemmatex S.R.L. {{location}} · Correo automático, no responder.
+                </p>
+              </td>
+            </tr>
+
+          </table>
+
+        </td>
+      </tr>
+    </table>
+  </center>
+</body>
+</html>

@@ -75,14 +75,19 @@ Decisión: implementar más adelante. Tabla `users.totp_secret` y `totp_enabled`
 - [ ] Backup codes (códigos de un solo uso)
 - [ ] Cifrar `totp_secret` en DB (AES-256-GCM)
 
-### Paso 3F — API keys (service-to-service)
+### Paso 3F — API keys (service-to-service) ✅ COMPLETADO
 
-- [ ] Middleware `apiKey.js` que detecta prefijo `sk_` en Authorization
-- [ ] Endpoint `POST /api/v1/admin/applications/:id/api-keys` (crear)
-- [ ] Endpoint `GET /api/v1/admin/applications/:id/api-keys` (listar)
-- [ ] Endpoint `DELETE /api/v1/admin/api-keys/:id` (revocar)
-- [ ] Endpoint `/api/v1/internal/users/:id` consumido por otros micros con API key
-- [ ] Sistema de scopes (`users:read`, `users:list`, etc.)
+- [x] Middleware `apiKey.js` que detecta prefijo `sk_` en Authorization
+- [x] Endpoint `POST /api/v1/admin/applications/:appId/api-keys` (crear)
+- [x] Endpoint `GET /api/v1/admin/applications/:appId/api-keys` (listar)
+- [x] Endpoint `DELETE /api/v1/admin/api-keys/:id` (revocar)
+- [x] Endpoint `GET /api/v1/internal/whoami` (echo/debug)
+- [x] Endpoint `GET /api/v1/internal/users/:id` (scope `users:read`)
+- [x] Endpoint `GET /api/v1/internal/users` (scope `users:list`)
+- [x] Sistema de scopes: `users:read`, `users:list`, `applications:read`, `audit:write`
+- [x] Audit s2s: `internal.user.read`, `internal.users.list`, `admin.api_key.created/revoked`
+- [x] Touch `last_used_at` automático
+- [x] Validación de application activa
 
 ### Paso 3G — Endpoints Admin ✅ PARCIAL
 
@@ -128,12 +133,28 @@ Sessions:
 - [ ] Endpoint `POST /api/v1/auth/oauth/unlink`
 - [ ] Cifrar tokens del provider en `auth_providers.access_token_enc`
 
-### Paso 3I — Cookie httpOnly para refresh
+### Self-service del usuario ✅ COMPLETADO
 
-- [ ] Detección de `application.type='spa-web'`
-- [ ] Setear refresh en cookie `Secure + HttpOnly + SameSite=Strict`
-- [ ] Endpoint `/api/v1/auth/refresh` lee de cookie si presente
-- [ ] CSRF protection (token doble-submit)
+- [x] `sid` claim en JWT (identifica sesión actual)
+- [x] `PATCH /api/v1/auth/me` (edita profile cliente/admin auto-detect)
+- [x] `GET /api/v1/auth/sessions` (lista propia con `is_current`)
+- [x] `DELETE /api/v1/auth/sessions/:id` (revoca propia con verificación user_id)
+- [x] `POST /api/v1/auth/sessions/logout-others` (preserva current)
+- [x] Validación phone E.164 Bolivia en cambio
+- [x] Verificación phone único anti-conflict
+- [x] Audit: `user.profile.updated`, `auth.session.revoked_self`, `auth.session.logout_others`
+
+### Paso 3I — Cookie httpOnly para refresh ✅ COMPLETADO
+
+- [x] Detección automática de `application.type='spa-web'`
+- [x] Setear refresh en cookie `Secure + HttpOnly + SameSite=Strict + Path=/api/v1/auth`
+- [x] Endpoint `/api/v1/auth/refresh` lee de cookie O body (según tipo de app)
+- [x] Endpoint `/auth/logout` limpia cookie
+- [x] Schema refresh body opcional (puede venir de cookie)
+- [x] `refresh_in: 'cookie'` flag en response para debug
+- [x] cookie-parser middleware integrado
+- [x] Env vars: `COOKIE_SECURE`, `COOKIE_SAMESITE`, `COOKIE_REFRESH_PATH`, `COOKIE_DOMAIN`
+- [ ] CSRF protection (token doble-submit) — `SameSite=Strict` cubre MVP, defer defense-in-depth
 
 ## Futuro lejano
 

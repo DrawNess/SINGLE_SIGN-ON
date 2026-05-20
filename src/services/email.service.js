@@ -134,6 +134,72 @@ Este enlace expira en ${config.security.adminInviteTtlDays} días.
   return send({ to, subject: 'Invitación al equipo · Gemmatex', html, text });
 }
 
+/**
+ * Notifica al usuario que se detectó robo de su refresh token y todas sus
+ * sesiones fueron revocadas. Best effort — no debe romper flujo si falla.
+ */
+async function sendSecurityTheftEmail({ to, firstName, ip, userAgent, when }) {
+  const resetUrl = buildUrl(
+    config.mail.resetUrlTemplate.replace('?token={token}', ''),
+    ''
+  );
+  const sessionsUrl = resetUrl.replace('/reset-password', '/sessions');
+  const html = render('security-theft', {
+    firstName: escapeHtml(firstName || ''),
+    ip: escapeHtml(ip || 'desconocida'),
+    userAgent: escapeHtml(userAgent || 'desconocido'),
+    when: escapeHtml(when || new Date().toISOString()),
+    resetUrl,
+    sessionsUrl,
+  });
+  const text = `Hola ${firstName},
+
+Detectamos actividad sospechosa en tu cuenta Gemmatex.
+Alguien intentó usar una sesión ya rotada. Cerramos todas tus sesiones.
+
+Fecha: ${when}
+IP: ${ip}
+Dispositivo: ${userAgent}
+
+Cambia tu contraseña: ${resetUrl}
+Ver tus sesiones: ${sessionsUrl}
+
+Si fuiste tú, ignora este mensaje.
+— GEMMATEX`;
+  return send({ to, subject: '⚠ Actividad sospechosa en tu cuenta · Gemmatex', html, text });
+}
+
+/**
+ * Notifica al usuario que su contraseña fue cambiada.
+ */
+async function sendPasswordChangedEmail({ to, firstName, ip, userAgent, when }) {
+  const resetUrl = buildUrl(
+    config.mail.resetUrlTemplate.replace('?token={token}', ''),
+    ''
+  );
+  const html = render('security-password-changed', {
+    firstName: escapeHtml(firstName || ''),
+    ip: escapeHtml(ip || 'desconocida'),
+    userAgent: escapeHtml(userAgent || 'desconocido'),
+    when: escapeHtml(when || new Date().toISOString()),
+    resetUrl,
+  });
+  const text = `Hola ${firstName},
+
+Tu contraseña Gemmatex fue cambiada exitosamente.
+
+Cuándo: ${when}
+IP: ${ip}
+Dispositivo: ${userAgent}
+
+Cerramos todas tus sesiones por seguridad.
+
+Si NO fuiste tú, recupera tu cuenta: ${resetUrl}
+
+— GEMMATEX`;
+  return send({ to, subject: 'Tu contraseña fue cambiada · Gemmatex', html, text });
+}
+
 async function sendPasswordResetEmail({ to, firstName, token }) {
   const resetUrl = buildUrl(config.mail.resetUrlTemplate, token);
   const html = render('reset', {
@@ -158,5 +224,7 @@ module.exports = {
   sendEmailChangeEmail,
   sendPasswordResetEmail,
   sendInvitationEmail,
+  sendSecurityTheftEmail,
+  sendPasswordChangedEmail,
   buildUrl,
 };

@@ -210,6 +210,52 @@ async function revokeSession(req, res, next) {
   } catch (err) { next(err); }
 }
 
+// ============================================================
+// API KEYS
+// ============================================================
+
+async function createApiKey(req, res, next) {
+  try {
+    const { apiKey, plain } = await apiKeyService.createApiKey({
+      applicationId: req.params.appId,
+      name: req.body.name,
+      scopes: req.body.scopes,
+      expiresAt: req.body.expires_at,
+      actorId: req.auth.userId,
+      req,
+    });
+    res.status(201).json({
+      api_key: apiKey.toJSON(),
+      plain_key: plain,
+      warning: 'Guarda esta key AHORA. No se mostrará otra vez.',
+    });
+  } catch (err) { next(err); }
+}
+
+async function listApiKeys(req, res, next) {
+  try {
+    const pag = parsePagination(req.query);
+    const { rows, count } = await apiKeyService.listApiKeys({
+      applicationId: req.params.appId,
+      q: { ...req.query, ...pag },
+    });
+    res.json(paginatedResponse({
+      rows, count, page: pag.page, pageSize: pag.pageSize,
+      mapper: (k) => k.toJSON(),
+    }));
+  } catch (err) { next(err); }
+}
+
+async function revokeApiKey(req, res, next) {
+  try {
+    await apiKeyService.revokeApiKey(req.params.id, {
+      actorId: req.auth.userId,
+      req,
+    });
+    res.status(204).end();
+  } catch (err) { next(err); }
+}
+
 async function revokeAllUserSessions(req, res, next) {
   try {
     const { revoked } = await sessionService.revokeAllForUser(req.params.userId, {
@@ -246,4 +292,8 @@ module.exports = {
   listUserSessions,
   revokeSession,
   revokeAllUserSessions,
+  // api keys
+  createApiKey,
+  listApiKeys,
+  revokeApiKey,
 };

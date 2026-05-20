@@ -90,6 +90,12 @@ const schema = Joi.object({
 
   // CORS
   CORS_ORIGINS: Joi.string().default(''),
+
+  // Cookies (refresh_token httpOnly para apps spa-web)
+  COOKIE_SECURE: Joi.boolean().truthy('true').falsy('false').default(false),
+  COOKIE_SAMESITE: Joi.string().valid('strict', 'lax', 'none').default('strict'),
+  COOKIE_REFRESH_PATH: Joi.string().default('/api/v1/auth'),
+  COOKIE_DOMAIN: Joi.string().allow('').default(''),
 }).unknown(true);
 
 const { value, error } = schema.validate(process.env, {
@@ -206,5 +212,12 @@ module.exports = {
     origins: value.CORS_ORIGINS
       ? value.CORS_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean)
       : [],
+  },
+
+  cookie: {
+    secure: value.COOKIE_SECURE,
+    sameSite: value.COOKIE_SAMESITE,
+    refreshPath: value.COOKIE_REFRESH_PATH,
+    domain: value.COOKIE_DOMAIN || undefined,
   },
 };

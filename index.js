@@ -3,6 +3,7 @@
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 
 const config = require('./src/config/env');
 const { connect, disconnect } = require('./src/config/db');
@@ -17,6 +18,7 @@ const app = express();
 app.set('trust proxy', 1);
 
 app.use(helmet());
+app.use(cookieParser());
 app.use(express.json({ limit: '100kb' }));
 app.use(express.urlencoded({ extended: false, limit: '100kb' }));
 

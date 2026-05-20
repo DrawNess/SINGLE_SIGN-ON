@@ -236,6 +236,22 @@ async function applyPasswordChange({
     actorType: 'user',
     ...auditService.fromRequest(req),
   });
+
+  // Best-effort: notifica al user que cambió la contraseña
+  notifyPasswordChanged(user, req).catch((e) =>
+    console.error('[notifyPasswordChanged] fallo:', e.message)
+  );
+}
+
+async function notifyPasswordChanged(user, req) {
+  const firstName = await getFirstName(user.id);
+  await emailService.sendPasswordChangedEmail({
+    to: user.email,
+    firstName,
+    ip: req.ip || 'desconocida',
+    userAgent: req.get('user-agent') || 'desconocido',
+    when: new Date().toISOString(),
+  });
 }
 
 async function trimPasswordHistory(userId, transaction) {

@@ -76,6 +76,7 @@ async function rotateTokenPair({
     roles,
     audience: application.audience,
     applicationId: application.id,
+    extra: { sid: tokenRow.id },
   });
 
   return {

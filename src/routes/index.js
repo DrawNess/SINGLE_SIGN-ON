@@ -4,6 +4,7 @@ const { Router } = require('express');
 
 const authRouter = require('./auth.router');
 const adminRouter = require('./admin.router');
+const internalRouter = require('./internal.router');
 const wellKnownRouter = require('./well-known.router');
 const healthRouter = require('./health.router');
 
@@ -20,10 +21,7 @@ function routerApi(app) {
 
   apiRouter.use('/auth', authRouter);
   apiRouter.use('/admin', adminRouter);
-
-
-  // TODO próximas iteraciones:
-  // apiRouter.use('/internal', internalRouter);
+  apiRouter.use('/internal', internalRouter);
 }
 
 module.exports = { routerApi };

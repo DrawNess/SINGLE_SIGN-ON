@@ -111,16 +111,13 @@ X-Client-Id: app_ecommerce_dev
 ```
 
 ### Respuesta 200
+
+Comportamiento según `application.type`:
+
+**Para apps `mobile`, `desktop`, `service`** (body JSON):
 ```json
 {
-  "user": {
-    "id": "019e2dc3-...",
-    "email": "juan.perez@test.bo",
-    "status": "active",
-    "roles": ["client"],
-    "last_login_at": "...",
-    ...
-  },
+  "user": { /* ... */ "roles": ["client"] },
   "access_token": "eyJhbGciOiJSUzI1NiIs...",
   "refresh_token": "mbqe1DNcNKNbvhVXqTazwXwM...",
   "token_type": "Bearer",
@@ -128,6 +125,24 @@ X-Client-Id: app_ecommerce_dev
   "refresh_token_expires_at": "2026-05-22T22:30:00.000Z"
 }
 ```
+
+**Para apps `spa-web`** (cookie httpOnly):
+```json
+{
+  "user": { /* ... */ "roles": ["client"] },
+  "access_token": "eyJhbGciOiJSUzI1NiIs...",
+  "token_type": "Bearer",
+  "expires_in": 900,
+  "refresh_token_expires_at": "2026-05-22T22:30:00.000Z",
+  "refresh_in": "cookie"
+}
+```
+Response también incluye:
+```
+Set-Cookie: refresh_token=...; HttpOnly; Secure; SameSite=Strict; Path=/api/v1/auth; Max-Age=604800
+```
+
+El refresh_token NO va en el body (más seguro vs XSS). Browser maneja la cookie automáticamente.
 
 | Campo | Notas |
 |---|---|
@@ -153,13 +168,25 @@ Rota el refresh token. El viejo queda revocado con `revoked_reason='rotation'`. 
 
 ⚠ Si se reusa un refresh ya rotado → **detección de robo**: revoca toda la family, responde 401.
 
-### Body
+### Body (mobile/desktop/service)
 ```json
 { "refresh_token": "mbqe1DNcNKNbvhVXqTazwXwM..." }
 ```
 
+### Cookie (spa-web)
+No requiere body. El refresh viene en la cookie httpOnly automáticamente:
+```
+POST /api/v1/auth/refresh
+Cookie: refresh_token=mbqe1DNc...
+Content-Type: application/json
+
+{}
+```
+
 ### Respuesta 200
-Mismo formato que `/api/v1/auth/login`.
+Mismo formato que `/api/v1/auth/login`. Refresh rotado:
+- spa-web → nueva cookie Set-Cookie
+- otros → nuevo refresh_token en body
 
 ### Errores
 - `400 ValidationError`
@@ -435,6 +462,137 @@ Mismos efectos que reset-password: revoca refresh tokens, guarda history, audit.
 - `400 SamePassword` — nueva igual a actual
 - `400 PasswordReused` — en history
 - `400 ValidationError`
+
+---
+
+---
+
+## PATCH `/api/v1/auth/me`
+
+Actualiza el profile (client o admin auto-detectado) del usuario autenticado.
+
+### Headers
+```
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+### Body
+Todos los campos opcionales. Al menos uno requerido. El service auto-detecta si es `client_profile` o `admin_profile`.
+
+**Para clients**:
+```json
+{
+  "first_name": "Juan Carlos",
+  "last_name": "Pérez Mamani",
+  "phone": "+59172000999",
+  "birth_date": "1990-05-15",
+  "razon_social": "Empresa SRL",
+  "departamento": "La Paz",
+  "provincia": "Murillo",
+  "ciudad": "La Paz",
+  "calle_avenida": "Av. 6 de Agosto",
+  "numero": "2500",
+  "casa_dpto": "Dpto 8B",
+  "link_google_maps": "https://maps.google.com/?q=..."
+}
+```
+
+**Para admins**:
+```json
+{
+  "first_name": "Maria",
+  "last_name": "Lopez",
+  "job_title": "Soporte Técnico",
+  "department": "IT",
+  "phone": "+59172999999"
+}
+```
+
+NO se pueden editar aquí: `email` (use `/auth/change-email`), `password` (use `/auth/change-password`), `document_type`/`document_number` (contactar soporte), `status`, `roles` (admin endpoints).
+
+### Respuesta 200
+```json
+{
+  "user": { /* ... */ "roles": ["client"] },
+  "profile": { /* fields actualizados */ },
+  "profile_type": "client"
+}
+```
+
+### Errores
+- `400 ValidationError` — body vacío o tipo incorrecto
+- `400 ValidationError` — phone no es formato `+591########` (clients)
+- `400 BadRequest` — intentas cambiar document
+- `409 PhoneInUse` — teléfono ya está en uso por otro cliente
+
+---
+
+## GET `/api/v1/auth/sessions`
+
+Lista las sesiones activas del usuario actual (refresh tokens no revocados, no expirados).
+
+### Headers
+```
+Authorization: Bearer <access_token>
+```
+
+### Respuesta 200
+```json
+{
+  "items": [
+    {
+      "id": "019e45e9-be3e-76b7-...",
+      "application": {
+        "id": "...",
+        "name": "ecommerce",
+        "display_name": "E-Commerce GEMMATEX",
+        "type": "spa-web"
+      },
+      "ip": "192.168.1.50",
+      "user_agent": "Mozilla/5.0 (Linux) Chrome/...",
+      "expires_at": "2026-05-27T15:03:27.038Z",
+      "created_at": "2026-05-20T15:03:27.038Z",
+      "is_current": false
+    },
+    {
+      "id": "019e45e9-bdbe-7a69-...",
+      "application": { "name": "tickets-soporte", "type": "service" },
+      "ip": "201.45.x.x",
+      "user_agent": "curl/8.20.0",
+      "is_current": true
+    }
+  ],
+  "total": 2
+}
+```
+
+`is_current: true` marca la sesión asociada al JWT actual (`sid` claim).
+
+---
+
+## DELETE `/api/v1/auth/sessions/:id`
+
+Revoca una sesión propia (force-logout de un dispositivo específico).
+
+### Respuesta 204
+
+### Errores
+- `404 NotFound` — sesión no encontrada o no es tuya (anti-IDOR)
+- `400 BadRequest` — ya estaba revocada
+
+---
+
+## POST `/api/v1/auth/sessions/logout-others`
+
+Revoca TODAS las sesiones activas excepto la actual. Útil tras sospecha de robo.
+
+### Respuesta 200
+```json
+{ "revoked": 4 }
+```
+
+`revoked` = número de sesiones revocadas. La sesión actual (identificada por `sid` del JWT) se preserva.
 
 ---
 

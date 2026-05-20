@@ -26,6 +26,7 @@ function requireAuth(options = {}) {
         roles: claims.roles || [],
         audience: claims.aud,
         appId: claims.app_id,
+        sid: claims.sid || null,
         claims,
       };
       next();

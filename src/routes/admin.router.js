@@ -83,6 +83,20 @@ router.post('/applications/:id/rotate-secret',
   controller.rotateClientSecret
 );
 
+// --- API keys (por application) ---
+router.get('/applications/:appId/api-keys',
+  validate({ params: schemas.appIdAndQuery, query: schemas.listApiKeys }),
+  controller.listApiKeys
+);
+router.post('/applications/:appId/api-keys',
+  validate({ params: schemas.appIdAndQuery, body: schemas.createApiKey }),
+  controller.createApiKey
+);
+router.delete('/api-keys/:id',
+  validate({ params: schemas.apiKeyIdParam }),
+  controller.revokeApiKey
+);
+
 // --- Invitations ---
 router.get('/invitations',
   validate({ query: schemas.listInvitations }),

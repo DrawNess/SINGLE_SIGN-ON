@@ -4,8 +4,40 @@ const authService = require('../services/auth.service');
 const verificationService = require('../services/verification.service');
 const passwordService = require('../services/password.service');
 const invitationService = require('../services/invitation.service');
+const userService = require('../services/user.service');
 const { User } = require('../db/models');
 const { HttpError } = require('../middleware/errorHandler');
+const {
+  setRefreshCookie,
+  clearRefreshCookie,
+  shouldUseCookie,
+  COOKIE_NAME,
+} = require('../utils/cookies');
+
+/**
+ * Emite los tokens al cliente según el tipo de application:
+ * - spa-web → refresh en cookie httpOnly, omitido del JSON
+ * - otros (mobile/desktop/service) → refresh en JSON body
+ */
+function respondWithTokens(res, application, payload) {
+  if (shouldUseCookie(application)) {
+    setRefreshCookie(
+      res,
+      payload.refresh_token,
+      payload.refresh_token_expires_at
+    );
+    const { refresh_token, ...rest } = payload;
+    return res.json({ ...rest, refresh_in: 'cookie' });
+  }
+  return res.json(payload);
+}
+
+/**
+ * Extrae refresh_token del body o cookie.
+ */
+function extractRefreshToken(req) {
+  return req.body?.refresh_token || req.cookies?.[COOKIE_NAME] || null;
+}
 
 async function register(req, res, next) {
   try {
@@ -31,7 +63,7 @@ async function login(req, res, next) {
       req,
       application,
     });
-    res.json({
+    respondWithTokens(res, application, {
       user: { ...user.toJSON(), roles },
       ...tokens,
     });
@@ -42,11 +74,19 @@ async function login(req, res, next) {
 
 async function refresh(req, res, next) {
   try {
-    const { user, roles, tokens } = await authService.refresh(
-      req.body.refresh_token,
+    const refreshToken = extractRefreshToken(req);
+    if (!refreshToken) {
+      throw new HttpError(
+        400,
+        'BadRequest',
+        'refresh_token requerido (body o cookie)'
+      );
+    }
+    const { user, roles, tokens, application } = await authService.refresh(
+      refreshToken,
       { req }
     );
-    res.json({
+    respondWithTokens(res, application, {
       user: { ...user.toJSON(), roles },
       ...tokens,
     });
@@ -57,12 +97,16 @@ async function refresh(req, res, next) {
 
 async function logout(req, res, next) {
   try {
+    const refreshToken = extractRefreshToken(req);
     await authService.logout({
-      refreshPlain: req.body?.refresh_token,
+      refreshPlain: refreshToken,
       allDevices: !!req.body?.all_devices,
       userId: req.auth.userId,
       req,
     });
+    if (req.cookies?.[COOKIE_NAME]) {
+      clearRefreshCookie(res);
+    }
     res.status(204).end();
   } catch (err) {
     next(err);
@@ -173,6 +217,54 @@ async function changePassword(req, res, next) {
   }
 }
 
+// ============================================================
+// Self-service: PATCH /me, GET/DELETE sessions
+// ============================================================
+
+async function updateMe(req, res, next) {
+  try {
+    const result = await userService.updateMyProfile(req.auth.userId, req.body, { req });
+    const userJson = result.user.toJSON();
+    res.json({
+      user: { ...userJson, roles: result.roles },
+      profile: result.profile.toJSON(),
+      profile_type: result.profileType,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function listMySessions(req, res, next) {
+  try {
+    const sessions = await userService.listMySessions(req.auth.userId, req.auth.sid);
+    res.json({
+      items: sessions,
+      total: sessions.length,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function revokeMySession(req, res, next) {
+  try {
+    await userService.revokeMySession(req.auth.userId, req.params.id, { req });
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function logoutOthers(req, res, next) {
+  try {
+    const result = await userService.logoutOthers(req.auth.userId, req.auth.sid, { req });
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function acceptInvitation(req, res, next) {
   try {
     const application = await authService.resolveApplication(
@@ -200,7 +292,7 @@ async function acceptInvitation(req, res, next) {
       userAgent: req.get('user-agent'),
     });
 
-    res.status(201).json({
+    respondWithTokens(res.status(201), application, {
       message: 'Invitación aceptada. Cuenta creada.',
       user: { ...user.toJSON(), roles },
       ...tokens,
@@ -216,6 +308,10 @@ module.exports = {
   refresh,
   logout,
   me,
+  updateMe,
+  listMySessions,
+  revokeMySession,
+  logoutOthers,
   verifyEmail,
   resendVerification,
   changeEmail,

@@ -281,6 +281,10 @@ async function refresh(refreshPlain, { req }) {
         ...auditService.fromRequest(req),
         metadata: { family_id: err.familyId },
       });
+      // Best-effort: notifica al user que su sesión fue comprometida
+      notifyTheft(err.userId, req).catch((e) =>
+        console.error('[notifyTheft] fallo:', e.message)
+      );
       throw new HttpError(401, 'TokenTheftDetected', 'Sesión comprometida, vuelve a loguear');
     }
     throw new HttpError(401, 'InvalidRefreshToken', err.message);
@@ -317,7 +321,7 @@ async function refresh(refreshPlain, { req }) {
     ...auditService.fromRequest(req),
   });
 
-  return { user, roles, tokens };
+  return { user, roles, tokens, application };
 }
 
 /**
@@ -357,6 +361,30 @@ async function me(userId) {
   if (!user) throw new HttpError(404, 'NotFound', 'Usuario no encontrado');
   const roles = await getRoleNames(userId);
   return { user, roles };
+}
+
+/**
+ * Manda email de seguridad al user cuya sesión fue comprometida.
+ * Carga user + first_name + dispara email.
+ */
+async function notifyTheft(userId, req) {
+  const { User, ClientProfile, AdminProfile } = require('../db/models');
+  const user = await User.findByPk(userId);
+  if (!user) return;
+  let firstName = '';
+  const cp = await ClientProfile.findOne({ where: { user_id: userId } });
+  if (cp) firstName = cp.first_name;
+  else {
+    const ap = await AdminProfile.findOne({ where: { user_id: userId } });
+    if (ap) firstName = ap.first_name;
+  }
+  await emailService.sendSecurityTheftEmail({
+    to: user.email,
+    firstName,
+    ip: req.ip || 'desconocida',
+    userAgent: req.get('user-agent') || 'desconocido',
+    when: new Date().toISOString(),
+  });
 }
 
 module.exports = {

@@ -21,11 +21,13 @@ Microservicio de Single Sign-On centralizado para las aplicaciones de GEMMATEX (
 ### 🌐 API
 - [Auth](./api/auth.md) — Endpoints `/api/v1/auth/*`
 - [Admin](./api/admin.md) — Endpoints `/api/v1/admin/*` (gestión)
+- [Internal](./api/internal.md) — Endpoints `/api/v1/internal/*` (s2s con API keys)
 - [Well-known](./api/well-known.md) — JWKS endpoint
 
 ### 🔁 Flujos
 - [Registro](./flujos/registro.md)
 - [Login + Refresh](./flujos/login-y-refresh.md)
+- [Cookie httpOnly vs body JSON](./flujos/cookie-vs-body.md)
 - [Verificación de email + cambio de email](./flujos/verificacion-email.md)
 - [Reset y cambio de contraseña](./flujos/password-reset.md)
 - [Invitaciones admin](./flujos/invitations.md)

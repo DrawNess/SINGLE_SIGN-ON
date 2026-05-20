@@ -39,6 +39,26 @@ router.post('/logout',
 
 router.get('/me', requireAuth(), controller.me);
 
+// Editar mi propio profile (client o admin auto-detect)
+router.patch('/me',
+  requireAuth(),
+  validate({ body: schemas.updateMyProfile }),
+  controller.updateMe
+);
+
+// Mis sesiones activas
+router.get('/sessions', requireAuth(), controller.listMySessions);
+
+// Revoca una sesión propia (force-logout dispositivo)
+router.delete('/sessions/:id',
+  requireAuth(),
+  validate({ params: schemas.sessionIdParam }),
+  controller.revokeMySession
+);
+
+// Revocar todas menos la actual
+router.post('/sessions/logout-others', requireAuth(), controller.logoutOthers);
+
 // Verificación de email (registro o cambio de email)
 router.get('/verify-email',
   validate({ query: schemas.verifyEmailQuery }),
