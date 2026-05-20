@@ -81,6 +81,23 @@ Para distinguir, en este proyecto:
 - "cliente" sin más → persona
 - "application" o "OAuth client" → app consumidora
 
+## Roadmap a SSO real
+
+El MVP actual = "single account, multiple logins". Cada app puede llamar `/auth/login` directamente. Funciona pero usuario debe loguearse en cada app.
+
+**Paso 3J (planificado)**: convertir en SSO real con Authorization Code Flow. User loguea UNA vez en `account.gemmatex.com.bo`, las apps reciben tokens vía code exchange.
+
+Componentes nuevos:
+- Tabla `sso_sessions` (sesión maestra cross-app)
+- Tabla `authorization_codes` (codes temporales 1-uso)
+- Cookie `sso_session` con `Domain=.gemmatex.com.bo`
+- Endpoints `/authorize` + `/token` + `/sso-logout`
+- PKCE + state validation
+
+Schema actual ya tiene `applications.allowed_redirect_uris` y `client_secret_hash` listos.
+
+Ver detalle en [docs/roadmap.md](../roadmap.md#paso-3j) y [docs/integracion/frontend-account.md](../integracion/frontend-account.md).
+
 ## Diferencias con OAuth 2.0 puro
 
 El SSO sigue principios OAuth 2.0 / OIDC pero **no implementa el flujo completo `authorization_code`** en MVP.

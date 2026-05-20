@@ -160,6 +160,69 @@ Sessions:
 - [x] Verificación phone único anti-conflict
 - [x] Audit: `user.profile.updated`, `auth.session.revoked_self`, `auth.session.logout_others`
 
+### Paso 3J — OAuth Authorization Code Flow (SSO real) ⏳ PRÓXIMO
+
+Convierte el MVP en **SSO real**: una sola sesión activa para todas las apps (ecommerce, soporte, crm). User loguea UNA vez en `account.gemmatex.com.bo`, las demás apps reciben tokens vía code exchange.
+
+#### Schema nuevo
+
+- [ ] Tabla `sso_sessions` (id, user_id, cookie_hash, ip, user_agent, expires_at, revoked_at, revoked_reason)
+- [ ] Tabla `authorization_codes` (id, code_hash, sso_session_id, user_id, application_id, redirect_uri, scope, state, code_challenge, code_challenge_method, expires_at, used_at)
+- [ ] FK opcional `refresh_tokens.sso_session_id` → CASCADE revoca refresh al matar sesión SSO
+
+#### Endpoints nuevos
+
+- [ ] `GET /api/v1/auth/authorize` — valida client_id + redirect_uri + state + PKCE, genera code, redirect
+- [ ] `POST /api/v1/auth/token` — exchange code → tokens
+- [ ] `POST /api/v1/auth/sso-logout` — cierra sesión SSO global + cascade revoca apps
+- [ ] `GET /.well-known/openid-configuration` — OIDC discovery (opcional)
+- [ ] `GET /api/v1/auth/userinfo` — OIDC userinfo (opcional, ya tenemos `/auth/me`)
+
+#### Cookie nueva
+
+- [ ] Cookie `sso_session` con `Domain=.gemmatex.com.bo` Path=/ SameSite=Lax HttpOnly Secure
+- [ ] Vive 30 días, paralela a refresh_token cookies per-app
+
+#### Modificaciones existentes
+
+- [ ] `/auth/login`: además de refresh per-app, crea `sso_session` + setea cookie parent domain
+- [ ] `/auth/logout`: opcional flag `sso_global=true` → equivale a `/sso-logout`
+- [ ] Validation `applications.allowed_redirect_uris` debe coincidir con redirect_uri
+
+#### Frontend account changes
+
+- [ ] Nueva vista `/authorize` que orquesta el flow OAuth (params query)
+- [ ] Botón "Cerrar sesión global" en `/sessions` → `/sso-logout`
+- [ ] Lista apps autorizadas con info de sso_session
+
+#### Endpoints admin
+
+- [ ] `GET /api/v1/admin/sso-sessions/:userId` — listar sesiones SSO
+- [ ] `DELETE /api/v1/admin/sso-sessions/:id` — force-logout global
+
+#### Seguridad
+
+- [ ] PKCE obligatorio (`code_challenge` S256)
+- [ ] `state` validation anti-CSRF en callback
+- [ ] Code TTL corto (~60 seg)
+- [ ] Code 1-uso (used_at)
+- [ ] redirect_uri exact match contra allowed_redirect_uris
+- [ ] Rate limit en `/authorize` + `/token`
+
+#### Migraciones requeridas
+
+- [ ] `20XXXXXXXXXX-add-sso-sessions.js`
+- [ ] `20XXXXXXXXXX-add-authorization-codes.js`
+- [ ] `20XXXXXXXXXX-add-sso-session-id-to-refresh-tokens.js`
+
+#### Docs
+
+- [ ] `docs/flujos/oauth-code-flow.md` — flujo completo con diagramas
+- [ ] `docs/api/oauth.md` — endpoints /authorize y /token detallados
+- [ ] Update `docs/arquitectura/multi-app.md` con OAuth flow real
+
+Estimado: 1-2 días backend + 1 día frontend.
+
 ### Paso 3I — Cookie httpOnly para refresh ✅ COMPLETADO
 
 - [x] Detección automática de `application.type='spa-web'`
