@@ -15,7 +15,7 @@ Sistema de envío de emails con plantillas HTML editables, branded Gemmatex.
 
 ## Resumen rápido
 
-- 3 plantillas activas: `verify.html`, `change.html`, `reset.html`.
+- 6 plantillas activas: `verify.html`, `change.html`, `reset.html`, `invitation.html`, `security-theft.html`, `security-password-changed.html`.
 - Todas branded: logo Gemmatex + color corporativo + footer.
 - Editas el HTML → cambio se aplica sin tocar JS.
 - En dev: hot reload (sin restart server).

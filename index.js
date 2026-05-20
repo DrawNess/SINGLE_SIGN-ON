@@ -11,6 +11,7 @@ require('./src/db/models'); // carga modelos + asociaciones
 
 const { routerApi } = require('./src/routes');
 const { notFound, errorHandler } = require('./src/middleware/errorHandler');
+const { startJobs, stopJobs } = require('./src/jobs');
 
 const app = express();
 
@@ -42,6 +43,7 @@ app.use(errorHandler);
 async function start() {
   try {
     await connect();
+    startJobs();
     app.listen(config.app.port, () => {
       console.log('');
       console.log(`✔ ${config.app.name} (${config.env})`);
@@ -60,6 +62,7 @@ async function start() {
 async function shutdown(signal) {
   console.log(`\n[${signal}] cerrando...`);
   try {
+    stopJobs();
     await disconnect();
   } catch (err) {
     console.error('Error cerrando DB:', err.message);

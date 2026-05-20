@@ -133,6 +133,22 @@ Sessions:
 - [ ] Endpoint `POST /api/v1/auth/oauth/unlink`
 - [ ] Cifrar tokens del provider en `auth_providers.access_token_enc`
 
+### Jobs / mantenimiento ✅ COMPLETADO
+
+- [x] `cleanup-tokens` cron diario (3am) borrar tokens viejos
+- [x] Advisory lock Postgres para multi-réplica
+- [x] Configurable retención por tabla via `.env`
+- [x] Manual run script para ad-hoc / incidentes
+- [x] Audit logs con retención larga (compliance)
+
+### Notificaciones de seguridad ✅ COMPLETADO
+
+- [x] Email "Actividad sospechosa" tras `theft_detected` (badge rojo + detalle IP)
+- [x] Email "Contraseña cambiada" tras `password.changed`
+- [x] Mejor effort: si SMTP falla NO rompe flujo
+- [x] Datos incluidos: when, IP, user-agent
+- [x] Botones acción: cambiar password + ver sesiones
+
 ### Self-service del usuario ✅ COMPLETADO
 
 - [x] `sid` claim en JWT (identifica sesión actual)

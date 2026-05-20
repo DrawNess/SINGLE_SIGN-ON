@@ -91,6 +91,15 @@ const schema = Joi.object({
   // CORS
   CORS_ORIGINS: Joi.string().default(''),
 
+  // Jobs (cron)
+  JOBS_ENABLED: Joi.boolean().truthy('true').falsy('false').default(true),
+  JOBS_CLEANUP_TOKENS_CRON: Joi.string().default('0 3 * * *'),
+  JOBS_CLEANUP_REFRESH_TOKENS_DAYS: Joi.number().integer().min(7).default(90),
+  JOBS_CLEANUP_EMAIL_TOKENS_DAYS: Joi.number().integer().min(1).default(30),
+  JOBS_CLEANUP_PASSWORD_RESETS_DAYS: Joi.number().integer().min(1).default(30),
+  JOBS_CLEANUP_PHONE_VERIFICATIONS_DAYS: Joi.number().integer().min(1).default(30),
+  JOBS_CLEANUP_AUDIT_LOGS_DAYS: Joi.number().integer().min(30).default(365),
+
   // Cookies (refresh_token httpOnly para apps spa-web)
   COOKIE_SECURE: Joi.boolean().truthy('true').falsy('false').default(false),
   COOKIE_SAMESITE: Joi.string().valid('strict', 'lax', 'none').default('strict'),
@@ -212,6 +221,16 @@ module.exports = {
     origins: value.CORS_ORIGINS
       ? value.CORS_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean)
       : [],
+  },
+
+  jobs: {
+    enabled: value.JOBS_ENABLED,
+    cleanupTokensCron: value.JOBS_CLEANUP_TOKENS_CRON,
+    cleanupRefreshTokensDays: value.JOBS_CLEANUP_REFRESH_TOKENS_DAYS,
+    cleanupEmailTokensDays: value.JOBS_CLEANUP_EMAIL_TOKENS_DAYS,
+    cleanupPasswordResetsDays: value.JOBS_CLEANUP_PASSWORD_RESETS_DAYS,
+    cleanupPhoneVerificationsDays: value.JOBS_CLEANUP_PHONE_VERIFICATIONS_DAYS,
+    cleanupAuditLogsDays: value.JOBS_CLEANUP_AUDIT_LOGS_DAYS,
   },
 
   cookie: {

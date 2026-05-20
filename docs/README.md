@@ -45,6 +45,9 @@ Microservicio de Single Sign-On centralizado para las aplicaciones de GEMMATEX (
 ### 🔌 Integración
 - [Cómo consumir el SSO desde otros microservicios](./integracion/otros-microservicios.md)
 
+### ⚙️ Operaciones
+- [Jobs / cron](./jobs.md) — Cleanup tokens viejos + lock distribuido
+
 ### 📋 Roadmap
 - [Pendientes](./roadmap.md) — Email verify, SMS, 2FA, OAuth, admin
 
