@@ -20,6 +20,20 @@ module.exports = {
     const apps = [
       {
         id: uuidv7(),
+        name: 'account-portal',
+        display_name: 'Portal de Cuenta GEMMATEX',
+        client_id: 'app_account_portal_dev',
+        client_secret_hash: null,
+        type: 'spa-web',
+        audience: 'account',
+        allowed_origins: ['http://localhost:3000', 'http://localhost:4200'],
+        allowed_redirect_uris: EMPTY_TEXT_ARRAY,
+        is_active: true,
+        created_at: now,
+        updated_at: now,
+      },
+      {
+        id: uuidv7(),
         name: 'ecommerce',
         display_name: 'E-Commerce GEMMATEX',
         client_id: 'app_ecommerce_dev',
@@ -27,6 +41,20 @@ module.exports = {
         type: 'spa-web',
         audience: 'ecommerce',
         allowed_origins: ['http://localhost:3000', 'http://localhost:5173'],
+        allowed_redirect_uris: EMPTY_TEXT_ARRAY,
+        is_active: true,
+        created_at: now,
+        updated_at: now,
+      },
+      {
+        id: uuidv7(),
+        name: 'support-portal',
+        display_name: 'Portal de Soporte GEMMATEX',
+        client_id: 'app_support_dev',
+        client_secret_hash: null,
+        type: 'spa-web',
+        audience: 'support',
+        allowed_origins: ['http://localhost:3002'],
         allowed_redirect_uris: EMPTY_TEXT_ARRAY,
         is_active: true,
         created_at: now,
@@ -68,7 +96,9 @@ module.exports = {
     console.log('═══════════════════════════════════════════════════════');
     console.log('APLICACIONES (DEV) CREADAS');
     console.log('═══════════════════════════════════════════════════════');
+    console.log('account-portal (spa-web)   client_id: app_account_portal_dev');
     console.log('e-commerce      (spa-web)   client_id: app_ecommerce_dev');
+    console.log('support-portal (spa-web)   client_id: app_support_dev');
     console.log('crm             (spa-web)   client_id: app_crm_dev');
     console.log('tickets-soporte (service)   client_id: app_tickets_dev');
     console.log('  client_secret:', ticketsSecret);
@@ -79,7 +109,15 @@ module.exports = {
 
   async down(queryInterface, Sequelize) {
     await queryInterface.bulkDelete('applications', {
-      name: { [Sequelize.Op.in]: ['ecommerce', 'tickets-soporte', 'crm'] },
+      name: {
+        [Sequelize.Op.in]: [
+          'account-portal',
+          'ecommerce',
+          'support-portal',
+          'tickets-soporte',
+          'crm',
+        ],
+      },
     });
   },
 };

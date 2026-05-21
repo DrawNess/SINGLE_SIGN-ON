@@ -1,6 +1,6 @@
 # Frontend `account.gemmatex.com.bo` — Guía completa
 
-Portal único de gestión de cuenta. Stack: **Angular 19+ standalone**.
+Portal único de gestión de cuenta. Stack: **Angular 21+ standalone** (probado con 21.1.x).
 
 ## Arquitectura
 
@@ -43,7 +43,7 @@ npx tailwindcss init -p
 export const environment = {
   production: false,
   ssoApiUrl: 'http://localhost:2106',
-  ssoClientId: 'app_account_dev',
+  ssoClientId: 'app_account_portal_dev',
   // Futuro OAuth (paso 3J)
   oauthEnabled: false,
 };
@@ -54,7 +54,7 @@ export const environment = {
 export const environment = {
   production: true,
   ssoApiUrl: 'https://sso.gemmatex.com.bo',
-  ssoClientId: 'app_account_prod',
+  ssoClientId: 'app_account_portal_prod',
   oauthEnabled: true,
 };
 ```
@@ -221,7 +221,7 @@ export class AuthService {
 }
 ```
 
-## HTTP Interceptor (functional, Angular 19+)
+## HTTP Interceptor (functional, Angular 16+)
 
 ```ts
 // src/app/core/auth/auth.interceptor.ts

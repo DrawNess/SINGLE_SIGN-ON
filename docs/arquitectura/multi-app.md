@@ -121,14 +121,26 @@ MVP usa opción A.
 
 Para MVP, mantenemos roles globales: simple, suficiente.
 
+## Apps estándar (convención naming)
+
+| App | client_id dev | client_id prod | audience | type |
+|---|---|---|---|---|
+| account portal | `app_account_portal_dev` | `app_account_portal_prod` | `account` | `spa-web` |
+| e-commerce | `app_ecommerce_dev` | `app_ecommerce_prod` | `ecommerce` | `spa-web` |
+| support frontend | `app_support_dev` | `app_support_prod` | `support` | `spa-web` |
+| CRM | `app_crm_dev` | `app_crm_prod` | `crm` | `spa-web` |
+| Tickets backend | `app_tickets_dev` | `app_tickets_prod` | `tickets` | `service` (+ client_secret) |
+
 ## Seed (dev)
 
-`src/db/seeders/dev/20260515000001-seed-applications.js` crea:
+`src/db/seeders/dev/20260515000001-seed-applications.js` crea las apps dev:
 
 ```
-ecommerce       (spa-web)   client_id: app_ecommerce_dev    aud: ecommerce
-tickets-soporte (service)   client_id: app_tickets_dev      aud: tickets   + client_secret
-crm             (spa-web)   client_id: app_crm_dev          aud: crm
+account-portal  (spa-web)   client_id: app_account_portal_dev  aud: account
+ecommerce       (spa-web)   client_id: app_ecommerce_dev       aud: ecommerce
+support-portal  (spa-web)   client_id: app_support_dev         aud: support
+crm             (spa-web)   client_id: app_crm_dev             aud: crm
+tickets-soporte (service)   client_id: app_tickets_dev         aud: tickets  + client_secret
 ```
 
 El `client_secret` de Tickets se imprime UNA VEZ en la consola al correr el seed. Guárdalo en `.env` del Tickets backend.
