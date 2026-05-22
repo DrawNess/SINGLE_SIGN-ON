@@ -59,8 +59,8 @@ X-Client-Id: app_ecommerce_dev
 | `document_number` | string | depende | obligatorio si hay `document_type` |
 | `razon_social` | string | depende | obligatorio si `document_type='NIT'` |
 | `birth_date` | ISO date | ✗ | en el pasado |
-| `departamento` | enum | ✓ | 9 deptos Bolivia |
-| `provincia`, `ciudad`, `calle_avenida`, `numero` | string | ✓ | |
+| `departamento` | enum | ✗ | 9 deptos Bolivia (opcional desde 2026-05) |
+| `provincia`, `ciudad`, `calle_avenida`, `numero` | string | ✗ | opcional (user puede completar después en `/profile`) |
 | `casa_dpto`, `link_google_maps` | string | ✗ | opcional |
 
 ### Respuesta 201

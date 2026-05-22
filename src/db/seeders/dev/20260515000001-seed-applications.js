@@ -40,7 +40,7 @@ module.exports = {
         client_secret_hash: null,
         type: 'spa-web',
         audience: 'ecommerce',
-        allowed_origins: ['http://localhost:3000', 'http://localhost:5173'],
+        allowed_origins: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:4200'],
         allowed_redirect_uris: EMPTY_TEXT_ARRAY,
         is_active: true,
         created_at: now,

@@ -93,11 +93,11 @@ Datos mínimos para autenticar. NO contiene nombre/apellido (eso va en `client_p
 | `document_number` | varchar(20) UNIQUE NULL | |
 | `birth_date` | date NULL | |
 | `razon_social` | varchar(200) NULL | obligatorio si `document_type='NIT'` |
-| `departamento` | enum NOT NULL | 9 deptos Bolivia |
-| `provincia` | varchar(100) NOT NULL | |
-| `ciudad` | varchar(100) NOT NULL | |
-| `calle_avenida` | varchar(200) NOT NULL | |
-| `numero` | varchar(20) NOT NULL | |
+| `departamento` | enum NULL | 9 deptos Bolivia (opcional desde 2026-05) |
+| `provincia` | varchar(100) NULL | opcional |
+| `ciudad` | varchar(100) NULL | opcional |
+| `calle_avenida` | varchar(200) NULL | opcional |
+| `numero` | varchar(20) NULL | opcional |
 | `casa_dpto` | varchar(50) NULL | |
 | `link_google_maps` | text NULL | |
 | `country` | varchar(2) NOT NULL DEFAULT 'BO' | reservado expansión |

@@ -97,6 +97,12 @@ Todo en transacción atómica — si algo falla, ROLLBACK total.
 - `Application` activa.
 - `Role` `client` existe.
 
+### Dirección opcional (desde 2026-05)
+
+Los campos de dirección (`departamento`, `provincia`, `ciudad`, `calle_avenida`, `numero`) son **opcionales** en `/auth/register`. El cliente puede completarlos después desde `PATCH /auth/me`. Esto agiliza el onboarding inicial.
+
+Solo obligatorios: `email`, `password`, `first_name`, `last_name`, `phone`.
+
 ### Base de datos
 - CHECK `phone ~ '^\+591[0-9]{8}$'`.
 - CHECK `NIT ⇒ razon_social NOT NULL`.
