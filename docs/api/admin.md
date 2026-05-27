@@ -375,9 +375,14 @@ Mismo formato que login: `{ user, access_token, refresh_token, ... }`.
 | `DELETE /sessions/:id` | `admin.session.revoked` |
 | `DELETE /users/:userId/sessions` | `admin.sessions.revoked_all` |
 
-## Pendiente próximas iteraciones
+## Estado de iteraciones
 
-- [ ] API keys s2s (paso 3F)
-- [ ] OAuth Google/Facebook (paso 3H)
-- [ ] Cookie httpOnly para refresh (paso 3I)
-- [ ] 2FA TOTP (paso 3E diferido)
+- [x] API keys s2s — paso 3F (`/admin/applications/:id/api-keys`, `/internal/*`)
+- [x] Cookie httpOnly para refresh — paso 3I (apps `spa-web`)
+- [x] Endpoints admin completos — paso 3G (users, applications, api-keys, invitations, sessions, audit-logs)
+- [x] Password flow completo — paso 3D (forgot, reset, change, history)
+- [ ] Verificación SMS — paso 3C
+- [ ] 2FA TOTP — paso 3E (diferido)
+- [ ] OAuth Google/Facebook — paso 3H
+- [ ] OAuth Authorization Code Flow — paso 3J
+- [ ] Audit actions `user.suspended` y `role.assigned` — paso 3K

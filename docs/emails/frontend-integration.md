@@ -117,11 +117,13 @@ Los emails del SSO **NO apuntan a la API directamente**. Apuntan al frontend por
 | `/register` | Form de registro | `POST /api/v1/auth/register` |
 | `/verify-email?token=` | Procesa link del email | `POST /api/v1/auth/verify-email` |
 | `/confirm-email-change?token=` | Confirma cambio | `POST /api/v1/auth/verify-email` (mismo) |
-| `/forgot-password` | Pide email para reset | `POST /api/v1/auth/forgot-password` (paso 3D) |
-| `/reset-password?token=` | Form de nueva password | `POST /api/v1/auth/reset-password` (paso 3D) |
-| `/verify-phone?code=` | Validar código SMS | `POST /api/v1/auth/verify-phone` (paso 3C) |
-| `/2fa/setup` | Activar 2FA con QR | `POST /api/v1/auth/2fa/setup` (paso 3E) |
-| `/profile` | Editar datos (futuro) | `GET/PATCH /api/v1/auth/me` |
+| `/forgot-password` | Pide email para reset | `POST /api/v1/auth/forgot-password` |
+| `/reset-password?token=` | Form de nueva password | `POST /api/v1/auth/reset-password` |
+| `/change-password` | Cambio con password actual | `POST /api/v1/auth/change-password` |
+| `/profile` | Editar datos | `GET/PATCH /api/v1/auth/me` |
+| `/sessions` | Ver dispositivos / cerrar sesiones | `GET/DELETE /api/v1/auth/sessions` |
+| `/verify-phone?code=` | Validar código SMS | pendiente — paso 3C |
+| `/2fa/setup` | Activar 2FA con QR | pendiente — paso 3E |
 
 ## Headers que el frontend debe enviar
 

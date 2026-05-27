@@ -62,7 +62,7 @@ Tabla `phone_verifications` queda creada por si se reactiva futuro.
 - [x] Trim automático de history
 - [x] Anti-enumeración en forgot-password
 - [x] Rate limit forgot (3/hora/email)
-- [ ] Email de notificación tras cambio password (futuro)
+- [x] Email de notificación tras cambio password (`sendPasswordChangedEmail` con IP + user-agent + timestamp, best-effort tras commit)
 
 ### Paso 3E — 2FA TOTP ⏸ DIFERIDO
 

@@ -2,9 +2,11 @@
 
 Cómo Tickets, E-commerce, CRM consumen el SSO.
 
+> Ejemplo real ya implementado: `docs/integracion/api-v6.md` (microservicio API V6 Ecommerce).
+
 ## 1. Registrarse en el SSO (una vez por app)
 
-Cada app debe estar en la tabla `applications`. En dev se crean via seed. En prod, super_admin las crea via endpoint admin (paso 3G).
+Cada app debe estar en la tabla `applications`. En dev se crean via seed. En prod, super_admin las crea via endpoint admin `POST /api/v1/admin/applications`.
 
 Resultado: cada app recibe:
 - `client_id` (público, ej `app_tickets_prod`)
@@ -90,7 +92,12 @@ Tickets backend                                      SSO
      │ ◄────────────────────────────────  │
 ```
 
-**Endpoint `/api/v1/internal/users/:id` no está implementado todavía** (paso 3F). Pero el schema y middleware estarán listos.
+Endpoints `/api/v1/internal/*` ya implementados:
+- `GET /internal/whoami` — health check de la API key
+- `GET /internal/users/:id` — detalle del usuario (scope `users:read`)
+- `GET /internal/users` — listado paginado (scope `users:list`)
+
+Ver `docs/integracion/api-v6.md` para un ejemplo real de integración con un microservicio consumidor (API V6 Ecommerce).
 
 ### API key obtenida
 

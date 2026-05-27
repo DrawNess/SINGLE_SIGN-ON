@@ -6,9 +6,12 @@ Cada email del SSO usa una plantilla HTML separada con placeholders `{{var}}`.
 
 ```
 src/services/email/templates/
-├── verify.html       Verificación de correo (registro)
-├── change.html       Confirmación de cambio de correo
-└── reset.html        Reset de contraseña (paso 3D)
+├── verify.html                       Verificación de correo (registro)
+├── change.html                       Confirmación de cambio de correo
+├── reset.html                        Reset de contraseña
+├── invitation.html                   Invitación a staff
+├── security-theft.html               Alerta: theft detected
+└── security-password-changed.html    Alerta: password cambiado
 ```
 
 ## Diseño común

@@ -37,11 +37,14 @@ Sin Handlebars / EJS / MJML para mantener cero dependencias extras y máximo con
 
 ```
 src/services/email/
-├── render.js               carga + reemplazo {{var}}
+├── render.js                          carga + reemplazo {{var}}
 └── templates/
-    ├── verify.html         registro
-    ├── change.html         cambio de correo
-    └── reset.html          reset password (paso 3D)
+    ├── verify.html                    registro
+    ├── change.html                    cambio de correo
+    ├── reset.html                     reset password
+    ├── invitation.html                invitación staff
+    ├── security-theft.html            alerta theft detected
+    └── security-password-changed.html alerta password cambiado
 
 src/services/email.service.js
                             send() + helpers de plantilla específicos
@@ -53,7 +56,10 @@ src/services/email.service.js
 |---|---|---|
 | Registro | `verify.html` | [flujos/verificacion-email.md](../flujos/verificacion-email.md) |
 | Cambio de email | `change.html` | [flujos/verificacion-email.md](../flujos/verificacion-email.md) |
-| Reset password (paso 3D) | `reset.html` | pendiente |
+| Reset password | `reset.html` | [flujos/password.md](../flujos/password.md) |
+| Invitación staff | `invitation.html` | [api/admin.md](../api/admin.md) |
+| Alerta theft detected | `security-theft.html` | [arquitectura/seguridad.md](../arquitectura/seguridad.md) |
+| Alerta password cambiado | `security-password-changed.html` | [arquitectura/seguridad.md](../arquitectura/seguridad.md) |
 
 ## Configuración `.env` relacionada
 

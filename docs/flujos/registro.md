@@ -53,16 +53,16 @@ Cliente              SSO            Postgres
 
 | Campo `users` | Valor |
 |---|---|
-| `status` | `active` ⚠ |
+| `status` | `pending` |
 | `email_verified_at` | `null` |
 | `password_hash` | Argon2id hash |
 | `password_changed_at` | `now()` |
 
-⚠ **Nota importante**: el MVP actual marca como `active` directo. En la próxima iteración (paso 3B) se cambiará a `pending` y se requerirá:
-- Verificación de email (link en correo)
-- Verificación de SMS
+El usuario queda en `pending` hasta verificar su email. El registro dispara automáticamente el envío de un `email_verifications` con token de un solo uso (24 h) al correo declarado.
 
-Solo entonces `status → active` y se permite login.
+Tras `POST /auth/verify-email` con un token válido, `status → active` y `email_verified_at` se completa. Recién entonces se permite `POST /auth/login`.
+
+Verificación de SMS sigue pendiente — paso 3C en `docs/roadmap.md`.
 
 ## Roles asignados
 

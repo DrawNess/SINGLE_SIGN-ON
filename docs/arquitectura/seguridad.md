@@ -21,7 +21,7 @@ Resumen de las protecciones aplicadas en el SSO.
 
 - Mínimo 8 caracteres.
 - Al menos 1 mayúscula, 1 minúscula, 1 número (Joi `auth.schemas.js`).
-- No reusar las últimas 5 (tabla `password_history`) — *aplicado en reset password, próxima iteración*.
+- No reusar las últimas `PASSWORD_HISTORY_SIZE` (default 5) — aplicado en reset password y change password vía `password.service.js`. Trim automático tras cada cambio.
 
 ## Lockout tras intentos fallidos
 
@@ -93,11 +93,9 @@ Esto contiene el robo aunque el atacante ya haya rotado: queda invalidado a su v
 
 ## CSRF
 
-Si activas cookie httpOnly para refresh, añade protección CSRF:
-- Header `X-CSRF-Token` con valor doble-submit, **o**
-- `SameSite=Strict` (cubre la mayoría de casos en MVP).
+Refresh tokens viajan en cookie `httpOnly; Secure; SameSite=Strict` cuando la application es de tipo `spa-web` (paso 3I implementado). Para apps `service`/`mobile`/`desktop` se devuelven en JSON.
 
-*MVP usa body JSON, no cookies → CSRF no aplica todavía.*
+Protección CSRF actual: `SameSite=Strict` en la cookie cubre la mayoría de casos. Defense-in-depth con `X-CSRF-Token` doble-submit queda pendiente (ver `docs/roadmap.md`).
 
 ## Rate limiting
 
@@ -162,9 +160,21 @@ Tabla `audit_logs` registra cada evento de seguridad:
 | `auth.logout` | Logout normal |
 | `auth.token.refreshed` | Rotación normal |
 | `auth.token.theft_detected` | 🚨 Posible robo |
-| `auth.password.changed` | (próxima iteración) |
-| `user.suspended` | (próxima iteración) |
-| `role.assigned` | (próxima iteración) |
+| `auth.password.reset_requested` | Forgot password disparado |
+| `auth.password.reset_completed` | Reset OK |
+| `auth.password.changed` | Cambio con password actual |
+| `auth.password.change_failed` | Cambio rechazado (verify, reuse, etc.) |
+| `auth.email_verification.resent` | Reenvío de verificación |
+| `auth.email_change.requested` | Solicitud de cambio de email |
+| `auth.session.revoked_self` | User revoca sesión propia |
+| `auth.session.logout_others` | User cierra otras sesiones |
+| `user.profile.updated` | PATCH /auth/me |
+| `admin.application.created` / `.updated` | CRUD applications |
+| `admin.api_key.created` / `.revoked` | CRUD API keys |
+| `admin.invitation.created` / `.revoked` / `.accepted` | Flujo invitations |
+| `admin.session.revoked` / `.sessions.revoked_all` | Admin force-logout |
+| `user.suspended` | (pendiente — paso 3K) |
+| `role.assigned` | (pendiente — paso 3K) |
 
 `actor_id`, `actor_type`, `ip`, `user_agent`, `metadata` (JSONB) — todo capturado.
 
@@ -189,4 +199,4 @@ Solo orígenes en `CORS_ORIGINS` del `.env` (coma-separados) pueden hacer reques
 
 Esto impide al atacante saber si un email está registrado.
 
-`POST /api/v1/auth/forgot-password` (próxima iteración) devolverá `200 OK` siempre, exista o no el email.
+`POST /api/v1/auth/forgot-password` devuelve `200 OK` siempre, exista o no el email (anti-enumeración aplicado en `password.service.js`).

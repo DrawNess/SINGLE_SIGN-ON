@@ -130,6 +130,8 @@ Para MVP, mantenemos roles globales: simple, suficiente.
 | support frontend | `app_support_dev` | `app_support_prod` | `support` | `spa-web` |
 | CRM | `app_crm_dev` | `app_crm_prod` | `crm` | `spa-web` |
 | Tickets backend | `app_tickets_dev` | `app_tickets_prod` | `tickets` | `service` (+ client_secret) |
+| Facturación backend | `app_facturacion_dev` | `app_facturacion_prod` | `facturacion` | `service` (+ client_secret) |
+| API V6 Ecommerce | `app_api_v6_dev` | `app_api_v6_prod` | `api-v6` | `service` (+ client_secret) |
 
 ## Seed (dev)
 
@@ -149,7 +151,7 @@ El `client_secret` de Tickets se imprime UNA VEZ en la consola al correr el seed
 
 En prod, el seed dev NO se corre. Las apps se crean via:
 
-- Endpoint admin `POST /api/v1/admin/applications` (a construir en paso 3G), **o**
+- Endpoint admin `POST /api/v1/admin/applications` (paso 3G implementado), **o**
 - SQL manual con `client_secret` hasheado a mano.
 
 `client_secret` real debería ser:
@@ -159,4 +161,4 @@ En prod, el seed dev NO se corre. Las apps se crean via:
 
 ## API keys = sub-credenciales por app
 
-`api_keys` es otra tabla. Cada app puede tener N API keys (ej una por entorno: dev, staging, prod). Ver `docs/integracion/otros-microservicios.md` y futuro paso 3F.
+`api_keys` es otra tabla. Cada app puede tener N API keys (ej una por entorno: dev, staging, prod). Endpoints CRUD vivos en `POST/GET /api/v1/admin/applications/:appId/api-keys` y consumo via `GET /api/v1/internal/*` con `Authorization: Bearer sk_live_...` (paso 3F implementado). Ver `docs/integracion/otros-microservicios.md` y `docs/integracion/api-v6.md`.
