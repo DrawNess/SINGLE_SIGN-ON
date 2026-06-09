@@ -151,11 +151,22 @@ async function main() {
     process.stdout.write(`  [${String(i + 1).padStart(3)}] ${email.padEnd(40)} `);
 
     try {
-      // Check existencia
+      // Check existencia. Si ya migrado, agregamos a mapping para que
+      // migrate-prod-orders pueda resolver customer_id → sso_uuid.
       const existing = await User.findOne({ where: { email } });
       if (existing) {
         console.log('⚠ ya existe en SSO');
         skipped.push({ old_user_id: prod.user_id, email, reason: 'already_exists', sso_uuid: existing.id });
+        mapping.push({
+          old_user_id:     prod.user_id,
+          old_customer_id: prod.customer_id,
+          email,
+          sso_uuid:        existing.id,
+          first_name:      prod.name?.trim() || email.split('@')[0],
+          last_name:       prod.last_name?.trim() || 'Cliente',
+          was_verified:    prod.is_email_verified,
+          email_status:    'pre_existing',
+        });
         continue;
       }
 
