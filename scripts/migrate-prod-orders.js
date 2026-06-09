@@ -190,6 +190,8 @@ async function main() {
 }
 
 main().catch(err => {
-  console.error('Error:', err.message);
+  console.error('Error stack:', err.stack);
+  console.error('Error message:', err.message || '(empty)');
+  console.error('Error name:', err.name);
   process.exit(1);
 });
