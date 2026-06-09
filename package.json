@@ -31,6 +31,7 @@
     "db:migrate:undo": "sequelize-cli db:migrate:undo",
     "db:seed": "sequelize-cli db:seed:all",
     "db:seed:dev": "NODE_ENV=development sequelize-cli db:seed:all --seeders-path src/db/seeders/dev",
+    "db:seed:prod": "NODE_ENV=production sequelize-cli db:seed:all --seeders-path src/db/seeders/prod",
     "db:seed:full-dev": "npm run db:seed && npm run db:seed:dev",
     "db:reset": "sequelize-cli db:migrate:undo:all && sequelize-cli db:migrate && npm run db:seed:full-dev"
   },
