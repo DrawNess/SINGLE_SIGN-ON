@@ -1,28 +1,42 @@
 /**
  * migrate-prod-orders.js
  *
- * Genera SQL de INSERT para las 33 órdenes del prod antiguo,
- * adaptadas al nuevo schema del API-V6 integrado con SSO.
+ * Genera SQL para migrar las 34 órdenes del API-V6 viejo al schema nuevo
+ * (post integración SSO).
  *
- * Prerequisitos:
- *   1. Haber corrido migrate-prod-users.js → migration-mapping.json generado
- *   2. Tunnel SSH activo: ssh -L 5433:localhost:5432 root@<VPS_IP> -N &
+ * Schema nuevo orders:
+ *   - id (preserva el viejo para mantener referencias en order_status_logs)
+ *   - customer_uuid (UUID del SSO, viene del mapping)
+ *   - customer_email, customer_first_name, customer_last_name, customer_phone
+ *   - customer_document_type, customer_document_number, customer_razon_social
+ *   - delivery_departamento, delivery_provincia, delivery_ciudad
+ *   - delivery_calle_avenida, delivery_numero, delivery_casa_dpto
+ *   - delivery_link_google_maps
+ *   - status, detail, contact_name, contact_whatsapp, delivery_whatsapp
+ *   - delivery_mode, branch_id, created_at, updated_at
+ *
+ * Schema nuevo orders_products: igual al viejo (id, order_id, amount, variant_id, unit_price, created_at)
+ *
+ * Pre-reqs:
+ *   - migration-mapping.json con todos los usuarios (incluido old_customer_id)
+ *   - DB CATALOGO_GEMMA viva con orders + customers + users + orders_products
  *
  * Uso:
- *   node scripts/migrate-prod-orders.js > /tmp/orders_migration.sql
- *   # Revisar el SQL, luego ejecutar en la nueva DB del API-V6:
- *   # psql -h localhost -p 5434 -U postgres -d gemma_catalogo -f /tmp/orders_migration.sql
+ *   PROD_DB_PASSWORD=xxx PROD_DB_PORT=5432 node scripts/migrate-prod-orders.js > /tmp/orders_migration.sql
+ *
+ * Para aplicar (DESPUÉS de correr migration 20260525000001-integrate-sso):
+ *   sudo -u postgres psql -d CATALOGO_GEMMA -f /tmp/orders_migration.sql
  */
 
 'use strict';
 
 const { Pool } = require('pg');
-const fs       = require('fs');
-const path     = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const PROD_DB = {
   host:     process.env.PROD_DB_HOST     || 'localhost',
-  port:     parseInt(process.env.PROD_DB_PORT, 10) || 5433,
+  port:     parseInt(process.env.PROD_DB_PORT, 10) || 5432,
   user:     process.env.PROD_DB_USER     || 'postgres',
   password: process.env.PROD_DB_PASSWORD || '',
   database: process.env.PROD_DB_NAME     || 'CATALOGO_GEMMA',
@@ -30,49 +44,51 @@ const PROD_DB = {
 };
 
 if (!PROD_DB.password) {
-  console.error('ERROR: PROD_DB_PASSWORD no seteado. Exportar antes de correr.');
+  console.error('ERROR: PROD_DB_PASSWORD no seteado.');
   process.exit(1);
 }
 
 const MAPPING_FILE = path.join(__dirname, 'migration-mapping.json');
 
+function sqlStr(v) {
+  if (v === null || v === undefined || v === '') return 'NULL';
+  return `'${String(v).replace(/'/g, "''")}'`;
+}
+
+function sqlNum(v) {
+  if (v === null || v === undefined) return 'NULL';
+  return String(v);
+}
+
+function sqlInt(v) {
+  if (v === null || v === undefined) return 'NULL';
+  return String(parseInt(v, 10));
+}
+
 async function main() {
   if (!fs.existsSync(MAPPING_FILE)) {
-    console.error('ERROR: migration-mapping.json no existe. Corre primero migrate-prod-users.js');
+    console.error('ERROR: migration-mapping.json no existe. Corre migrate-prod-users.js primero.');
     process.exit(1);
   }
 
   const { mapping } = JSON.parse(fs.readFileSync(MAPPING_FILE, 'utf-8'));
-  const customerToUuid = {};
+  const customerToMap = {};
   for (const m of mapping) {
     if (m.old_customer_id && m.sso_uuid && m.sso_uuid !== 'DRY_RUN') {
-      customerToUuid[m.old_customer_id] = { uuid: m.sso_uuid, ...m };
+      customerToMap[m.old_customer_id] = m;
     }
   }
 
   const pool = new Pool(PROD_DB);
 
-  // Leer órdenes + productos
   const { rows: orders } = await pool.query(`
     SELECT
-      o.id            AS order_id,
-      o.customer_id,
-      o.status,
-      o.created_at,
-      o.updated_at,
-      o.contact_name,
-      o.contact_whatsapp,
-      o.delivery_whatsapp,
-      o.delivery_mode,
-      o.branch_id,
-      o.detail        AS observations,
-      c.name          AS cust_name,
-      c.last_name     AS cust_last_name,
-      c.phone         AS cust_phone,
-      c.city,
-      c.street,
-      c.street_number,
-      c.apartment,
+      o.id, o.customer_id, o.status, o.detail,
+      o.created_at, o.updated_at,
+      o.contact_name, o.contact_whatsapp, o.delivery_whatsapp,
+      o.delivery_mode, o.branch_id,
+      c.name AS c_name, c.last_name AS c_last_name, c.phone AS c_phone,
+      c.city, c.street, c.street_number, c.apartment,
       u.email
     FROM orders o
     LEFT JOIN customers c ON c.id = o.customer_id
@@ -80,116 +96,104 @@ async function main() {
     ORDER BY o.id
   `);
 
-  const { rows: orderProducts } = await pool.query(`
-    SELECT
-      op.order_id,
-      v.product_id,
-      op.variant_id,
-      op.amount      AS quantity,
-      op.unit_price,
-      p.name         AS product_name,
-      v.sku
-    FROM orders_products op
-    LEFT JOIN variants v ON v.id = op.variant_id
-    LEFT JOIN products p ON p.id = v.product_id
-    ORDER BY op.order_id
+  const { rows: items } = await pool.query(`
+    SELECT order_id, amount, variant_id, unit_price, created_at
+    FROM orders_products
+    ORDER BY order_id, id
   `);
 
-  const productsByOrder = {};
-  for (const op of orderProducts) {
-    if (!productsByOrder[op.order_id]) productsByOrder[op.order_id] = [];
-    productsByOrder[op.order_id].push(op);
+  const itemsByOrder = {};
+  for (const it of items) {
+    if (!itemsByOrder[it.order_id]) itemsByOrder[it.order_id] = [];
+    itemsByOrder[it.order_id].push(it);
   }
 
-  // Generar SQL
   const lines = [];
-  lines.push('-- Migración órdenes prod → nuevo API-V6 + SSO');
+  lines.push('-- Migración orders prod → schema nuevo (post-SSO)');
   lines.push(`-- Generado: ${new Date().toISOString()}`);
-  lines.push('-- REVISAR antes de ejecutar.\n');
-  lines.push('BEGIN;\n');
+  lines.push('-- Pre-req: migration 20260525000001-integrate-sso ya aplicada');
+  lines.push('');
+  lines.push('BEGIN;');
+  lines.push('');
 
-  let migrated = 0, skipped = 0;
+  let migratedOrders = 0;
+  let migratedItems  = 0;
+  let skippedOrders  = 0;
 
   for (const o of orders) {
-    const mapped = customerToUuid[o.customer_id];
+    const m = customerToMap[o.customer_id];
 
-    if (!mapped) {
-      lines.push(`-- SKIP order ${o.order_id}: customer_id ${o.customer_id} sin UUID en mapping`);
-      skipped++;
+    if (!m) {
+      lines.push(`-- SKIP order ${o.id}: customer_id ${o.customer_id} sin mapping`);
+      skippedOrders++;
       continue;
     }
 
-    const products = productsByOrder[o.order_id] || [];
-
-    // Snapshot del cliente
-    const snapshot = JSON.stringify({
-      user_id:    mapped.uuid,
-      email:      o.email,
-      first_name: o.cust_name      || '',
-      last_name:  o.cust_last_name || '',
-      phone:      o.cust_phone     || '',
-      address: {
-        city:          o.city          || '',
-        street:        o.street        || '',
-        street_number: o.street_number || '',
-        apartment:     o.apartment     || '',
-      },
-    }).replace(/'/g, "''");
-
-    // Snapshot de productos
-    const productsSnapshot = JSON.stringify(
-      products.map(p => ({
-        product_id:   p.product_id,
-        variant_id:   p.variant_id,
-        sku:          p.sku,
-        name:         p.product_name,
-        quantity:     p.quantity,
-        unit_price:   p.unit_price ?? 0,
-      }))
-    ).replace(/'/g, "''");
-
-    // Map status del viejo al nuevo
+    // Map status del viejo al nuevo (asumiendo enums similares)
     const statusMap = {
-      'pendiente': 'pending',
-      'en_proceso': 'confirmed',
-      'entregado': 'delivered',
-      'cancelado': 'cancelled',
+      'pendiente':  'pendiente',
+      'en_proceso': 'en_proceso',
+      'entregado':  'entregado',
+      'cancelado':  'cancelado',
     };
     const newStatus = statusMap[o.status] || o.status;
 
-    // INSERT en nuevo schema (ajustar columnas según tu nuevo orders table)
-    lines.push(`-- Order ${o.order_id} → user ${mapped.email}`);
+    lines.push(`-- Order ${o.id} → user ${m.email} (${m.sso_uuid})`);
     lines.push(`INSERT INTO orders (
-  user_id, status, customer_snapshot, items_snapshot,
-  delivery_mode, branch_id, contact_name, contact_whatsapp,
-  observations, created_at, updated_at
+  id, customer_uuid, status, detail,
+  customer_email, customer_first_name, customer_last_name, customer_phone,
+  delivery_ciudad, delivery_calle_avenida, delivery_numero, delivery_casa_dpto,
+  contact_name, contact_whatsapp, delivery_whatsapp,
+  delivery_mode, branch_id,
+  created_at, updated_at
 ) VALUES (
-  '${mapped.uuid}',
-  '${newStatus}',
-  '${snapshot}'::jsonb,
-  '${productsSnapshot}'::jsonb,
-  ${o.delivery_mode ? `'${o.delivery_mode}'` : 'NULL'},
-  ${o.branch_id     ? `${o.branch_id}`       : 'NULL'},
-  ${o.contact_name  ? `'${o.contact_name.replace(/'/g,"''")}'` : 'NULL'},
-  ${o.contact_whatsapp ? `'${o.contact_whatsapp}'` : 'NULL'},
-  ${o.observations  ? `'${o.observations.replace(/'/g,"''")}'` : 'NULL'},
-  '${o.created_at.toISOString()}',
-  '${o.updated_at.toISOString()}'
-) ON CONFLICT DO NOTHING;\n`);
+  ${sqlInt(o.id)},
+  ${sqlStr(m.sso_uuid)},
+  ${sqlStr(newStatus)},
+  ${sqlStr(o.detail)},
+  ${sqlStr(o.email)},
+  ${sqlStr(m.first_name || o.c_name)},
+  ${sqlStr(m.last_name  || o.c_last_name)},
+  ${sqlStr(m.phone      || o.c_phone)},
+  ${sqlStr(o.city)},
+  ${sqlStr(o.street)},
+  ${sqlStr(o.street_number)},
+  ${sqlStr(o.apartment)},
+  ${sqlStr(o.contact_name)},
+  ${sqlStr(o.contact_whatsapp)},
+  ${sqlStr(o.delivery_whatsapp)},
+  ${sqlStr(o.delivery_mode)},
+  ${sqlInt(o.branch_id)},
+  ${sqlStr(o.created_at.toISOString())},
+  ${sqlStr(o.updated_at.toISOString())}
+);`);
 
-    migrated++;
+    // Items de esta orden
+    const orderItems = itemsByOrder[o.id] || [];
+    for (const it of orderItems) {
+      lines.push(`INSERT INTO orders_products (order_id, amount, variant_id, unit_price, created_at)
+VALUES (${sqlInt(o.id)}, ${sqlInt(it.amount)}, ${sqlInt(it.variant_id)}, ${sqlNum(it.unit_price)}, ${sqlStr(it.created_at.toISOString())});`);
+      migratedItems++;
+    }
+    lines.push('');
+    migratedOrders++;
   }
 
-  lines.push('COMMIT;\n');
-  lines.push(`-- Resumen: ${migrated} migradas, ${skipped} sin mapping`);
+  // Reajusta secuencia para futuras órdenes
+  lines.push("SELECT setval('orders_id_seq', COALESCE((SELECT MAX(id) FROM orders), 0) + 1, false);");
+  lines.push("SELECT setval('orders_products_id_seq', COALESCE((SELECT MAX(id) FROM orders_products), 0) + 1, false);");
+  lines.push('');
+  lines.push('COMMIT;');
+  lines.push('');
+  lines.push(`-- Resumen: ${migratedOrders} órdenes, ${migratedItems} items, ${skippedOrders} skipped`);
 
   console.log(lines.join('\n'));
-  process.stderr.write(`\nÓrdenes: ${migrated} migradas, ${skipped} sin mapping\n`);
+  process.stderr.write(`\nOrders: ${migratedOrders} migradas, ${migratedItems} items, ${skippedOrders} sin mapping\n`);
 
   await pool.end();
 }
 
-main().catch(err => {
+main().catch((err) => {
   console.error('Error stack:', err.stack);
   console.error('Error message:', err.message || '(empty)');
   console.error('Error name:', err.name);
