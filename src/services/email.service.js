@@ -200,6 +200,39 @@ Si NO fuiste tú, recupera tu cuenta: ${resetUrl}
   return send({ to, subject: 'Tu contraseña fue cambiada · Gemmatex', html, text });
 }
 
+/**
+ * Email único para usuarios migrados desde sistemas previos.
+ * Combina bienvenida + acción de fijar contraseña.
+ * Usa el token de password_reset existente (mismo endpoint /auth/reset-password).
+ * El TTL es más largo (24h vs 1h del reset normal) — el script de migración
+ * inserta el password_reset con expires_at ampliado.
+ */
+async function sendMigrationWelcomeEmail({ to, firstName, token, ttlHours = 24 }) {
+  const resetUrl = buildUrl(config.mail.resetUrlTemplate, token);
+  const html = render('migration-welcome', {
+    firstName: escapeHtml(firstName || ''),
+    resetUrl,
+    ttlHours,
+  });
+  const text = `Hola ${firstName},
+
+En GEMMATEX estamos renovando la plataforma para sumar nuevas
+funcionalidades: historial de pedidos mejorado, notificaciones, y un
+perfil unificado para todos nuestros servicios.
+
+Para que disfrutes la nueva experiencia, solo necesitamos que elijas
+una contraseña nueva. Las anteriores no migran por motivos técnicos
+de la actualización.
+
+Crear tu contraseña: ${resetUrl}
+
+Este enlace expira en ${ttlHours} horas. Si recibiste este correo por
+error, ignoralo.
+
+— Equipo GEMMATEX`;
+  return send({ to, subject: 'Estrenamos GEMMATEX · Completa tu cuenta', html, text });
+}
+
 async function sendPasswordResetEmail({ to, firstName, token }) {
   const resetUrl = buildUrl(config.mail.resetUrlTemplate, token);
   const html = render('reset', {
@@ -223,6 +256,7 @@ module.exports = {
   sendVerificationEmail,
   sendEmailChangeEmail,
   sendPasswordResetEmail,
+  sendMigrationWelcomeEmail,
   sendInvitationEmail,
   sendSecurityTheftEmail,
   sendPasswordChangedEmail,
