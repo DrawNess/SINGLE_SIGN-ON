@@ -8,6 +8,12 @@ src/keys/*.key
 # Logs locales
 logs/
 *.log
+# Backups manuales de .env (contienen secrets)
+.env.bak*
+.env.backup*
+# Output de scripts de migración (contiene emails + UUIDs de clientes)
+scripts/migration-mapping.json
+scripts/migration-mapping.*.json
 
 ### Linux ###
 *~
