@@ -83,15 +83,15 @@ async function main() {
   const { rows: orderProducts } = await pool.query(`
     SELECT
       op.order_id,
-      op.product_id,
-      op.quantity,
+      v.product_id,
+      op.variant_id,
+      op.amount      AS quantity,
       op.unit_price,
-      p.name     AS product_name,
-      v.id       AS variant_id,
+      p.name         AS product_name,
       v.sku
     FROM orders_products op
-    LEFT JOIN products p ON p.id = op.product_id
-    LEFT JOIN variants v ON v.product_id = op.product_id AND v.id = op.variant_id
+    LEFT JOIN variants v ON v.id = op.variant_id
+    LEFT JOIN products p ON p.id = v.product_id
     ORDER BY op.order_id
   `);
 
