@@ -176,6 +176,15 @@ async function main() {
         continue;
       }
 
+      // Pre-check duplicado de phone ANTES de la transacción.
+      // Si ya está usado por otro user en SSO, usamos placeholder.
+      // Postgres aborta la transacción al violar UNIQUE, así que no podemos
+      // retry adentro del transaction block.
+      if (phone) {
+        const phoneInUse = await ClientProfile.findOne({ where: { phone } });
+        if (phoneInUse) phone = null;
+      }
+
       // Password temp aleatoria (nunca comunicada al usuario, sólo placeholder)
       const tempPassword = randomToken(20);
       const pwdHash = await hashPassword(tempPassword);
@@ -194,44 +203,22 @@ async function main() {
           { transaction: t }
         );
 
-        // Phone placeholder si era null
-        let effectivePhone = phone || placeholderPhone(user.id);
+        const effectivePhone = phone || placeholderPhone(user.id);
 
-        // Intento crear ClientProfile. Si phone colisiona, retry con placeholder.
-        try {
-          await ClientProfile.create(
-            {
-              user_id:    user.id,
-              first_name: firstName,
-              last_name:  lastName,
-              phone:      effectivePhone,
-              ciudad:     prod.city          || null,
-              calle_avenida: prod.street     || null,
-              numero:     prod.street_number || null,
-              casa_dpto:  prod.apartment     || null,
-              country:    'BO',
-            },
-            { transaction: t }
-          );
-        } catch (e) {
-          if (e.name === 'SequelizeUniqueConstraintError') {
-            effectivePhone = placeholderPhone(user.id);
-            await ClientProfile.create(
-              {
-                user_id:    user.id,
-                first_name: firstName,
-                last_name:  lastName,
-                phone:      effectivePhone,
-                ciudad:     prod.city          || null,
-                calle_avenida: prod.street     || null,
-                numero:     prod.street_number || null,
-                casa_dpto:  prod.apartment     || null,
-                country:    'BO',
-              },
-              { transaction: t }
-            );
-          } else throw e;
-        }
+        await ClientProfile.create(
+          {
+            user_id:    user.id,
+            first_name: firstName,
+            last_name:  lastName,
+            phone:      effectivePhone,
+            ciudad:     prod.city          || null,
+            calle_avenida: prod.street     || null,
+            numero:     prod.street_number || null,
+            casa_dpto:  prod.apartment     || null,
+            country:    'BO',
+          },
+          { transaction: t }
+        );
 
         await UserRole.create(
           { user_id: user.id, role_id: clientRole.id, assigned_at: new Date() },
