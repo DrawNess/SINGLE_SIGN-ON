@@ -89,6 +89,8 @@ const updateMyProfile = Joi.object({
   // Client-only
   phone: Joi.string().trim().max(20).optional(),
   birth_date: Joi.date().iso().less('now').optional(),
+  document_type: Joi.string().valid('CI', 'NIT').optional().allow(null),
+  document_number: Joi.string().trim().max(20).optional().allow(null, ''),
   razon_social: Joi.string().trim().max(200).optional().allow(null, ''),
   departamento: departamento.optional(),
   provincia: Joi.string().trim().min(2).max(100).optional(),

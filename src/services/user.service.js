@@ -18,6 +18,8 @@ const CLIENT_FIELDS = [
   'last_name',
   'phone',
   'birth_date',
+  'document_type',
+  'document_number',
   'razon_social',
   'departamento',
   'provincia',
@@ -102,12 +104,17 @@ async function updateMyProfile(userId, body, { req }) {
     }
   }
 
-  if (profileType === 'client' && body.document_type !== undefined) {
-    throw new HttpError(
-      400,
-      'BadRequest',
-      'No puedes cambiar tu documento aquí. Contacta soporte.'
-    );
+  // Si se envía document_number, validar unicidad (no en uso por otro user)
+  if (profileType === 'client' && body.document_number) {
+    const conflictDoc = await ClientProfile.findOne({
+      where: {
+        document_number: body.document_number,
+        user_id: { [Op.ne]: userId },
+      },
+    });
+    if (conflictDoc) {
+      throw new HttpError(409, 'DocumentInUse', 'Número de documento ya está en uso');
+    }
   }
 
   // Filtrar solo campos permitidos + detectar cambios reales
