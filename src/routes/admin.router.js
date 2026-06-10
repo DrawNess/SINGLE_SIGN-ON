@@ -13,7 +13,10 @@ const router = Router();
 router.use(requireAuth(), requireRole('admin', 'super_admin'));
 
 // --- Stats ---
-router.get('/stats', controller.getStats);
+router.get('/stats',
+  validate({ query: schemas.statsQuery }),
+  controller.getStats
+);
 
 // --- Users ---
 router.get('/users',

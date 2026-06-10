@@ -34,6 +34,15 @@ const updateUser = Joi.object({
   });
 
 // ============================================================
+// Stats
+// ============================================================
+
+const statsQuery = Joi.object({
+  from: Joi.date().iso().optional(),
+  to:   Joi.date().iso().greater(Joi.ref('from')).optional(),
+});
+
+// ============================================================
 // Audit logs
 // ============================================================
 
@@ -170,6 +179,8 @@ module.exports = {
   listUsers,
   userIdParam,
   updateUser,
+  // stats
+  statsQuery,
   // audit
   listAuditLogs,
   // applications

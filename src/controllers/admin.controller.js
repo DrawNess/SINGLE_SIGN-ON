@@ -75,7 +75,7 @@ async function listAuditLogs(req, res, next) {
 
 async function getStats(req, res, next) {
   try {
-    res.json(await adminService.getStats());
+    res.json(await adminService.getStats(req.query));
   } catch (err) { next(err); }
 }
 
