@@ -422,7 +422,7 @@ async function getStats(query = {}) {
   `, { type: sequelize.QueryTypes.SELECT });
 
   const byDepartamento = await sequelize.query(`
-    SELECT COALESCE(departamento, '(sin dato)') AS departamento, COUNT(*)::int AS count
+    SELECT COALESCE(departamento::text, '(sin dato)') AS departamento, COUNT(*)::int AS count
     FROM client_profiles
     GROUP BY departamento
     ORDER BY count DESC
