@@ -198,20 +198,39 @@ Si todo OK → request continúa. Sino → 401.
 | Password hash | argon2id con memoryCost 64MB |
 | TLS | Let's Encrypt en sso.gemmatex.com (renovación auto) |
 
-## 9. Estado actual prod (deploy 2026-06-08/09)
+## 9. Estado actual prod (al 2026-06-11)
 
 | Item | Estado |
 |------|--------|
 | SSO live | `https://sso.gemmatex.com` ✓ |
 | API-V6 integrado | `https://gemmatex.store/api/v1` ✓ |
-| Users migrados | 142 desde DB vieja + 2 fresh = 145 total |
+| Users migrados | 142 desde DB vieja + ~10 fresh = ~155 total |
 | Orders históricas | 34 con customer_uuid + snapshot ✓ |
 | Frontend ecommerce | `gemmatex.com.bo` ✓ |
 | Frontend account | `account.gemmatex.com.bo` ✓ |
 | JWT validation E2E | ✓ verificado con login real |
 | SMTP | Hostinger (limitado ~100/hora — bottleneck conocido) |
+| Migration-welcome emails enviados | 99/142 (41 fallaron por Hostinger ratelimit, pendiente reintento) |
+| Dashboard endpoint `/admin/stats` | ✓ deployed con timezone, semi-open ranges, comparación periodo anterior, data quality |
+| Índices DB para stats | ✓ migration `20260611000001-add-stats-indexes` aplicada |
 
-## 10. Pendientes y deferred
+## 10. Endpoints administrativos disponibles
+
+| Endpoint | Para qué | Doc |
+|----------|----------|-----|
+| `GET /admin/stats` | Reporte agregado con filtros temporales | `docs/api-admin-stats.md` |
+| `GET /admin/users` | Lista paginada con filtros | (referencia: admin.router.js) |
+| `GET /admin/users/:id` | Detalle de un user |  |
+| `PATCH /admin/users/:id` | Editar user (admin) |  |
+| `DELETE /admin/users/:id` | Soft-delete user |  |
+| `POST /admin/users/:id/restore` | Restaurar soft-deleted |  |
+| `GET /admin/audit-logs` | Logs de eventos auditables, paginado |  |
+| `POST /admin/applications` | Crear nueva app (client OAuth) |  |
+| `POST /admin/applications/:appId/api-keys` | Crear API key con scopes |  |
+
+Todos requieren auth `admin` o `super_admin`.
+
+## 11. Pendientes y deferred
 
 | Feature | Estado |
 |---------|--------|
@@ -221,4 +240,9 @@ Si todo OK → request continúa. Sino → 401.
 | Páginas `/accept-invitation`, `/confirm-email-change` | Pendiente frontend |
 | Migrar SMTP a Brevo (sin ratelimit) | Decisión pendiente |
 | Subdominio `api.gemmatex.com.bo` | Deferred |
-| Reintento bulk emails (41 fallidos por Hostinger ratelimit) | Pendiente (esperar 1-2h) |
+| Reintento bulk emails (41 fallidos) | Pendiente (cambiar a Brevo o esperar reset Hostinger) |
+| Heatmap por hora en `/admin/stats` | Pendiente |
+| Engagement buckets en `/admin/stats` | Pendiente |
+| Snapshot histórico semanal de stats | Pendiente (clave para tracking de campañas CI/NIT) |
+| Cohort retention | Deferred |
+| Funnel completo (register→verify→login→order) | Pendiente (requiere JOIN con DB API-V6) |
