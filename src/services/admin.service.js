@@ -287,30 +287,84 @@ async function listAuditLogs(q) {
 // ============================================================
 
 /**
- * Reporte completo del SSO.
+ * Reporte completo del SSO (dashboard admin).
  *
  * Query params (opcionales):
- *   from: ISO date — inicio de la ventana. Default: hace 30 dias.
- *   to:   ISO date — fin de la ventana. Default: ahora.
+ *   from:     ISO date — inicio de la ventana (inclusive). Default: hace 30 días.
+ *   to:       ISO date — fin de la ventana (EXCLUSIVO, semiabierto). Default: ahora.
+ *   timezone: zona horaria IANA para agrupaciones por día. Default: America/La_Paz.
+ *   compare:  'previous' o 'none'. Default 'previous'.
+ *             Si 'previous' incluye comparación con el periodo anterior de igual longitud.
  *
- * Las metricas "_in_range" usan from/to. Las "_total" / "_now" son globales.
+ * Convención: rangos semiabiertos [from, to). Es decir, eventos con
+ * created_at == to NO se incluyen. Esto evita ambigüedad con fines de día.
+ *
+ * Definiciones precisas:
+ *   users.total                      → users (sin deleted) — usuarios usables hoy
+ *   users.total_including_deleted    → users con paranoid:false — métricas de auditoría
+ *   users.clients / admins           → count de profile rows (puede haber pequeños
+ *                                       descalces con users si hay perfiles huérfanos)
+ *   onboarding                       → primer auth.login.success (NO último login)
  */
 async function getStats(query = {}) {
   const now = new Date();
   const defaultFrom = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const from = query.from ? new Date(query.from) : defaultFrom;
   const to   = query.to   ? new Date(query.to)   : now;
+  const tz   = query.timezone || 'America/La_Paz';
+  const compareEnabled = (query.compare ?? 'previous') !== 'none';
 
-  const rangeFilter = { [Op.gte]: from, [Op.lte]: to };
+  // Periodo anterior con misma longitud (semiabierto)
+  const periodMs = to.getTime() - from.getTime();
+  const prevFrom = new Date(from.getTime() - periodMs);
+  const prevTo   = new Date(from.getTime());
 
-  // ── 1. Counts globales de users
+  // ── Helpers SQL: rango semiabierto [from, to)
+  const inRangeAudit = (action) =>
+    AuditLog.count({
+      where: { action, created_at: { [Op.gte]: from, [Op.lt]: to } },
+    });
+  const inRangePrevAudit = (action) =>
+    AuditLog.count({
+      where: { action, created_at: { [Op.gte]: prevFrom, [Op.lt]: prevTo } },
+    });
+
+  // ── TODAS las queries en paralelo
   const [
-    usersTotal, usersActive, usersPending, usersSuspended, usersDeleted,
+    // Globales users
+    usersTotalActive, usersIncludingDeleted,
+    usersActive, usersPending, usersSuspended, usersDeleted,
     usersVerified, usersWithLoginEver, usersBlockedNow,
     clientsTotal, adminsTotal,
     rolesTotal, applicationsTotal, refreshActive,
+
+    // En rango (semiabierto)
+    registeredInRange,
+    loginsSuccessInRange, loginsFailedInRange,
+    resetsRequestedInRange, resetsCompletedInRange,
+    tokenTheftsInRange,
+
+    // Periodo anterior (semiabierto) — para comparación
+    prevRegistered,
+    prevLoginsSuccess, prevLoginsFailed,
+    prevResetsRequested,
+
+    // Queries crudas (devuelven arrays)
+    completenessRows,
+    dataQualityRows,
+    failureReasonsRows,
+    topFailureIpsRows,
+    registrationsPerDayRows,
+    loginsPerDayRows,
+    byCityRows,
+    byDepartamentoRows,
+    ageDistributionRows,
+    onboardingRows,
+    uniqueLoggedInRows,
+    byApplicationRows,
   ] = await Promise.all([
-    User.count(),
+    User.count(),                                                        // paranoid:true (excluye deleted)
+    User.count({ paranoid: false }),
     User.count({ where: { status: 'active' } }),
     User.count({ where: { status: 'pending' } }),
     User.count({ where: { status: 'suspended' } }),
@@ -323,148 +377,194 @@ async function getStats(query = {}) {
     Role.count(),
     Application.count(),
     RefreshToken.count({ where: { revoked_at: null, expires_at: { [Op.gt]: now } } }),
+
+    User.count({ where: { created_at: { [Op.gte]: from, [Op.lt]: to } } }),
+    inRangeAudit('auth.login.success'),
+    inRangeAudit('auth.login.failed'),
+    inRangeAudit('auth.password.reset_requested'),
+    inRangeAudit('auth.password.reset_completed'),
+    inRangeAudit('auth.token.theft_detected'),
+
+    compareEnabled
+      ? User.count({ where: { created_at: { [Op.gte]: prevFrom, [Op.lt]: prevTo } } })
+      : Promise.resolve(null),
+    compareEnabled ? inRangePrevAudit('auth.login.success') : Promise.resolve(null),
+    compareEnabled ? inRangePrevAudit('auth.login.failed')  : Promise.resolve(null),
+    compareEnabled ? inRangePrevAudit('auth.password.reset_requested') : Promise.resolve(null),
+
+    // ─ Profile completeness
+    sequelize.query(`
+      SELECT
+        COUNT(*)::int AS total,
+        COUNT(*) FILTER (WHERE phone IS NOT NULL AND phone NOT LIKE '+591000%')::int AS with_phone,
+        COUNT(*) FILTER (WHERE document_type IS NOT NULL AND document_number IS NOT NULL)::int AS with_document,
+        COUNT(*) FILTER (WHERE ciudad IS NOT NULL AND calle_avenida IS NOT NULL)::int AS with_address,
+        COUNT(*) FILTER (WHERE birth_date IS NOT NULL)::int AS with_birth_date,
+        COUNT(*) FILTER (WHERE
+          document_type IS NOT NULL
+          AND document_number IS NOT NULL
+          AND ciudad IS NOT NULL
+          AND calle_avenida IS NOT NULL
+          AND birth_date IS NOT NULL
+        )::int AS fully_completed
+      FROM client_profiles
+    `, { type: sequelize.QueryTypes.SELECT }),
+
+    // ─ Data quality (placeholder phones, etc)
+    sequelize.query(`
+      SELECT
+        COUNT(*) FILTER (WHERE phone LIKE '+591000%' OR phone IS NULL)::int AS placeholder_or_missing_phone,
+        COUNT(*) FILTER (WHERE document_number IS NULL)::int AS missing_document,
+        COUNT(*) FILTER (WHERE ciudad IS NULL OR calle_avenida IS NULL)::int AS incomplete_address
+      FROM client_profiles
+    `, { type: sequelize.QueryTypes.SELECT }),
+
+    // ─ Login failure reasons (en rango semiabierto)
+    sequelize.query(`
+      SELECT metadata->>'reason' AS reason, COUNT(*)::int AS count
+      FROM audit_logs
+      WHERE action = 'auth.login.failed'
+        AND created_at >= :from AND created_at < :to
+      GROUP BY reason
+      ORDER BY count DESC
+    `, { replacements: { from, to }, type: sequelize.QueryTypes.SELECT }),
+
+    // ─ Top IPs (en rango)
+    sequelize.query(`
+      SELECT ip::text AS ip, COUNT(*)::int AS attempts
+      FROM audit_logs
+      WHERE action = 'auth.login.failed'
+        AND ip IS NOT NULL
+        AND created_at >= :from AND created_at < :to
+      GROUP BY ip
+      ORDER BY attempts DESC
+      LIMIT 10
+    `, { replacements: { from, to }, type: sequelize.QueryTypes.SELECT }),
+
+    // ─ Registrations per day (timezone-aware)
+    sequelize.query(`
+      SELECT (created_at AT TIME ZONE :tz)::date AS date, COUNT(*)::int AS count
+      FROM users
+      WHERE created_at >= :from AND created_at < :to
+      GROUP BY date
+      ORDER BY date
+    `, { replacements: { from, to, tz }, type: sequelize.QueryTypes.SELECT }),
+
+    // ─ Logins per day (timezone-aware)
+    sequelize.query(`
+      SELECT (created_at AT TIME ZONE :tz)::date AS date,
+        COUNT(*) FILTER (WHERE action='auth.login.success')::int AS success,
+        COUNT(*) FILTER (WHERE action='auth.login.failed')::int  AS failed
+      FROM audit_logs
+      WHERE action IN ('auth.login.success', 'auth.login.failed')
+        AND created_at >= :from AND created_at < :to
+      GROUP BY date
+      ORDER BY date
+    `, { replacements: { from, to, tz }, type: sequelize.QueryTypes.SELECT }),
+
+    // ─ Por ciudad (global)
+    sequelize.query(`
+      SELECT COALESCE(ciudad, '(sin dato)') AS city, COUNT(*)::int AS count
+      FROM client_profiles
+      GROUP BY ciudad
+      ORDER BY count DESC
+      LIMIT 15
+    `, { type: sequelize.QueryTypes.SELECT }),
+
+    // ─ Por departamento
+    sequelize.query(`
+      SELECT COALESCE(departamento::text, '(sin dato)') AS departamento, COUNT(*)::int AS count
+      FROM client_profiles
+      GROUP BY departamento
+      ORDER BY count DESC
+    `, { type: sequelize.QueryTypes.SELECT }),
+
+    // ─ Edad
+    sequelize.query(`
+      SELECT
+        CASE
+          WHEN birth_date IS NULL THEN '(sin dato)'
+          WHEN EXTRACT(YEAR FROM AGE(birth_date)) < 18 THEN '<18'
+          WHEN EXTRACT(YEAR FROM AGE(birth_date)) BETWEEN 18 AND 24 THEN '18-24'
+          WHEN EXTRACT(YEAR FROM AGE(birth_date)) BETWEEN 25 AND 34 THEN '25-34'
+          WHEN EXTRACT(YEAR FROM AGE(birth_date)) BETWEEN 35 AND 44 THEN '35-44'
+          WHEN EXTRACT(YEAR FROM AGE(birth_date)) BETWEEN 45 AND 54 THEN '45-54'
+          ELSE '55+'
+        END AS age_group,
+        COUNT(*)::int AS count
+      FROM client_profiles
+      GROUP BY age_group
+      ORDER BY age_group
+    `, { type: sequelize.QueryTypes.SELECT }),
+
+    // ─ Onboarding: tiempo desde registro hasta PRIMER login (audit_logs)
+    sequelize.query(`
+      WITH first_logins AS (
+        SELECT user_id, MIN(created_at) AS first_login_at
+        FROM audit_logs
+        WHERE action = 'auth.login.success'
+          AND user_id IS NOT NULL
+        GROUP BY user_id
+      )
+      SELECT
+        COUNT(*)::int AS total_logueados,
+        COALESCE(ROUND(EXTRACT(EPOCH FROM percentile_cont(0.5) WITHIN GROUP (ORDER BY (fl.first_login_at - u.created_at))) / 3600, 2), 0)::float AS p50_horas,
+        COALESCE(ROUND(EXTRACT(EPOCH FROM percentile_cont(0.9) WITHIN GROUP (ORDER BY (fl.first_login_at - u.created_at))) / 3600, 2), 0)::float AS p90_horas
+      FROM users u
+      JOIN first_logins fl ON fl.user_id = u.id
+    `, { type: sequelize.QueryTypes.SELECT }),
+
+    // ─ Usuarios únicos que loguearon en el rango
+    sequelize.query(`
+      SELECT COUNT(DISTINCT user_id)::int AS unique_users
+      FROM audit_logs
+      WHERE action = 'auth.login.success'
+        AND user_id IS NOT NULL
+        AND created_at >= :from AND created_at < :to
+    `, { replacements: { from, to }, type: sequelize.QueryTypes.SELECT }),
+
+    // ─ Logins por aplicación (en rango)
+    sequelize.query(`
+      SELECT COALESCE(a.name, '(sin app)') AS app_name,
+             COUNT(*)::int AS count
+      FROM audit_logs al
+      LEFT JOIN applications a ON a.id = al.application_id
+      WHERE al.action = 'auth.login.success'
+        AND al.created_at >= :from AND al.created_at < :to
+      GROUP BY a.name
+      ORDER BY count DESC
+    `, { replacements: { from, to }, type: sequelize.QueryTypes.SELECT }),
   ]);
 
-  // ── 2. Counts en el rango (from..to)
-  const [
-    registeredInRange,
-    loginsSuccessInRange, loginsFailedInRange,
-    resetsRequestedInRange, resetsCompletedInRange,
-    tokenTheftsInRange,
-  ] = await Promise.all([
-    User.count({ where: { created_at: rangeFilter } }),
-    AuditLog.count({ where: { action: 'auth.login.success', created_at: rangeFilter } }),
-    AuditLog.count({ where: { action: 'auth.login.failed',  created_at: rangeFilter } }),
-    AuditLog.count({ where: { action: 'auth.password.reset_requested', created_at: rangeFilter } }),
-    AuditLog.count({ where: { action: 'auth.password.reset_completed', created_at: rangeFilter } }),
-    AuditLog.count({ where: { action: 'auth.token.theft_detected', created_at: rangeFilter } }),
-  ]);
-
-  // ── 3. Profile completeness (solo clientes)
-  const [completeness] = await sequelize.query(`
-    SELECT
-      COUNT(*)::int AS total,
-      COUNT(*) FILTER (WHERE phone IS NOT NULL AND phone NOT LIKE '+591000%')::int AS with_phone,
-      COUNT(*) FILTER (WHERE document_type IS NOT NULL AND document_number IS NOT NULL)::int AS with_document,
-      COUNT(*) FILTER (WHERE ciudad IS NOT NULL AND calle_avenida IS NOT NULL)::int AS with_address,
-      COUNT(*) FILTER (WHERE birth_date IS NOT NULL)::int AS with_birth_date,
-      COUNT(*) FILTER (WHERE
-        document_type IS NOT NULL
-        AND document_number IS NOT NULL
-        AND ciudad IS NOT NULL
-        AND calle_avenida IS NOT NULL
-        AND birth_date IS NOT NULL
-      )::int AS fully_completed
-    FROM client_profiles
-  `, { type: sequelize.QueryTypes.SELECT });
-
-  // ── 4. Login failure reasons (en rango)
-  const failureReasons = await sequelize.query(`
-    SELECT metadata->>'reason' AS reason, COUNT(*)::int AS count
-    FROM audit_logs
-    WHERE action = 'auth.login.failed'
-      AND created_at >= :from AND created_at <= :to
-    GROUP BY reason
-    ORDER BY count DESC
-  `, {
-    replacements: { from, to },
-    type: sequelize.QueryTypes.SELECT,
-  });
-
-  // ── 5. Top 10 IPs con fallos
-  const topFailureIps = await sequelize.query(`
-    SELECT ip::text AS ip, COUNT(*)::int AS attempts
-    FROM audit_logs
-    WHERE action = 'auth.login.failed'
-      AND ip IS NOT NULL
-      AND created_at >= :from AND created_at <= :to
-    GROUP BY ip
-    ORDER BY attempts DESC
-    LIMIT 10
-  `, {
-    replacements: { from, to },
-    type: sequelize.QueryTypes.SELECT,
-  });
-
-  // ── 6. Time series por dia (registros + logins)
-  const registrationsPerDay = await sequelize.query(`
-    SELECT DATE(created_at) AS date, COUNT(*)::int AS count
-    FROM users
-    WHERE created_at >= :from AND created_at <= :to
-    GROUP BY date
-    ORDER BY date
-  `, {
-    replacements: { from, to },
-    type: sequelize.QueryTypes.SELECT,
-  });
-
-  const loginsPerDay = await sequelize.query(`
-    SELECT DATE(created_at) AS date,
-      COUNT(*) FILTER (WHERE action='auth.login.success')::int AS success,
-      COUNT(*) FILTER (WHERE action='auth.login.failed')::int  AS failed
-    FROM audit_logs
-    WHERE action IN ('auth.login.success', 'auth.login.failed')
-      AND created_at >= :from AND created_at <= :to
-    GROUP BY date
-    ORDER BY date
-  `, {
-    replacements: { from, to },
-    type: sequelize.QueryTypes.SELECT,
-  });
-
-  // ── 7. Geografia (top ciudades de clientes)
-  const byCity = await sequelize.query(`
-    SELECT COALESCE(ciudad, '(sin dato)') AS city, COUNT(*)::int AS count
-    FROM client_profiles
-    GROUP BY ciudad
-    ORDER BY count DESC
-    LIMIT 15
-  `, { type: sequelize.QueryTypes.SELECT });
-
-  const byDepartamento = await sequelize.query(`
-    SELECT COALESCE(departamento::text, '(sin dato)') AS departamento, COUNT(*)::int AS count
-    FROM client_profiles
-    GROUP BY departamento
-    ORDER BY count DESC
-  `, { type: sequelize.QueryTypes.SELECT });
-
-  // ── 8. Demografia (rango edades, solo si birth_date presente)
-  const ageDistribution = await sequelize.query(`
-    SELECT
-      CASE
-        WHEN birth_date IS NULL THEN '(sin dato)'
-        WHEN EXTRACT(YEAR FROM AGE(birth_date)) < 18 THEN '<18'
-        WHEN EXTRACT(YEAR FROM AGE(birth_date)) BETWEEN 18 AND 24 THEN '18-24'
-        WHEN EXTRACT(YEAR FROM AGE(birth_date)) BETWEEN 25 AND 34 THEN '25-34'
-        WHEN EXTRACT(YEAR FROM AGE(birth_date)) BETWEEN 35 AND 44 THEN '35-44'
-        WHEN EXTRACT(YEAR FROM AGE(birth_date)) BETWEEN 45 AND 54 THEN '45-54'
-        ELSE '55+'
-      END AS age_group,
-      COUNT(*)::int AS count
-    FROM client_profiles
-    GROUP BY age_group
-    ORDER BY age_group
-  `, { type: sequelize.QueryTypes.SELECT });
-
-  // ── 9. Onboarding: tiempo desde registro hasta primer login (mediana, p90)
-  const onboarding = await sequelize.query(`
-    SELECT
-      COUNT(*)::int AS total_logueados,
-      ROUND(EXTRACT(EPOCH FROM percentile_cont(0.5) WITHIN GROUP (ORDER BY (last_login_at - created_at))) / 3600, 2)::float AS p50_horas,
-      ROUND(EXTRACT(EPOCH FROM percentile_cont(0.9) WITHIN GROUP (ORDER BY (last_login_at - created_at))) / 3600, 2)::float AS p90_horas
-    FROM users
-    WHERE last_login_at IS NOT NULL
-  `, { type: sequelize.QueryTypes.SELECT });
+  const completeness = completenessRows[0];
+  const dataQuality  = dataQualityRows[0];
+  const onboarding   = onboardingRows[0];
+  const uniqueLoggedIn = uniqueLoggedInRows[0]?.unique_users ?? 0;
 
   const pct = (a, b) => (b > 0 ? Math.round((a / b) * 1000) / 10 : 0);
+  const delta = (curr, prev) => {
+    if (prev === null || prev === undefined) return null;
+    if (prev === 0)  return curr > 0 ? 100 : 0;
+    return Math.round(((curr - prev) / prev) * 1000) / 10;
+  };
 
   return {
-    range: { from: from.toISOString(), to: to.toISOString() },
+    range: {
+      from: from.toISOString(),
+      to:   to.toISOString(),
+      timezone: tz,
+      semi_open: true,                         // [from, to)
+      previous: compareEnabled
+        ? { from: prevFrom.toISOString(), to: prevTo.toISOString() }
+        : null,
+    },
     generated_at: new Date().toISOString(),
+
     users: {
-      total: usersTotal,
-      clients: clientsTotal,
-      admins:  adminsTotal,
+      total:                    usersTotalActive,              // utilizables (excluye deleted)
+      total_including_deleted:  usersIncludingDeleted,         // auditoría
+      clients:                  clientsTotal,                  // # client_profiles
+      admins:                   adminsTotal,                   // # admin_profiles
       by_status: {
         active:    usersActive,
         pending:   usersPending,
@@ -472,12 +572,14 @@ async function getStats(query = {}) {
         deleted:   usersDeleted,
       },
       verified:        usersVerified,
-      verified_pct:    pct(usersVerified, usersTotal),
+      verified_pct:    pct(usersVerified, usersTotalActive),
       with_login_ever: usersWithLoginEver,
-      with_login_pct:  pct(usersWithLoginEver, usersTotal),
+      with_login_pct:  pct(usersWithLoginEver, usersTotalActive),
       blocked_now:     usersBlockedNow,
       registered_in_range: registeredInRange,
+      registered_in_range_delta_pct: delta(registeredInRange, prevRegistered),
     },
+
     profile_completeness: {
       total_clients:   completeness.total,
       with_phone:      completeness.with_phone,
@@ -490,32 +592,50 @@ async function getStats(query = {}) {
       fully_completed: completeness.fully_completed,
       fully_completed_pct: pct(completeness.fully_completed, completeness.total),
     },
+
+    data_quality: {
+      placeholder_or_missing_phone: dataQuality.placeholder_or_missing_phone,
+      missing_document:             dataQuality.missing_document,
+      incomplete_address:           dataQuality.incomplete_address,
+    },
+
     auth: {
       logins_success_in_range: loginsSuccessInRange,
+      logins_success_delta_pct: delta(loginsSuccessInRange, prevLoginsSuccess),
       logins_failed_in_range:  loginsFailedInRange,
+      logins_failed_delta_pct: delta(loginsFailedInRange, prevLoginsFailed),
+      unique_users_logged_in_in_range: uniqueLoggedIn,
       failure_rate_pct:        pct(loginsFailedInRange, loginsSuccessInRange + loginsFailedInRange),
-      failure_reasons:         failureReasons.reduce((a, r) => { a[r.reason || '(unknown)'] = r.count; return a; }, {}),
+      failure_reasons:         failureReasonsRows.reduce((a, r) => { a[r.reason || '(unknown)'] = r.count; return a; }, {}),
       password_resets_requested: resetsRequestedInRange,
+      password_resets_requested_delta_pct: delta(resetsRequestedInRange, prevResetsRequested),
       password_resets_completed: resetsCompletedInRange,
+      // NOTA: este % puede ser engañoso si un reset solicitado fuera del rango se completó dentro.
+      // Es ratio puro de eventos en el rango, no cohort tracking real.
       reset_completion_pct:    pct(resetsCompletedInRange, resetsRequestedInRange),
       token_theft_detected:    tokenTheftsInRange,
+      by_application:          byApplicationRows,
     },
+
     sessions: {
       active_refresh_tokens: refreshActive,
     },
-    top_failure_ips: topFailureIps,
+
+    top_failure_ips: topFailureIpsRows,
+
     time_series: {
-      registrations_per_day: registrationsPerDay,
-      logins_per_day:        loginsPerDay,
+      registrations_per_day: registrationsPerDayRows,
+      logins_per_day:        loginsPerDayRows,
     },
+
     geography: {
-      by_city:         byCity,
-      by_departamento: byDepartamento,
+      by_city:         byCityRows,
+      by_departamento: byDepartamentoRows,
     },
     demographics: {
-      by_age_group: ageDistribution,
+      by_age_group: ageDistributionRows,
     },
-    onboarding: onboarding[0] || null,
+    onboarding: onboarding || null,
     meta: {
       roles_count: rolesTotal,
       applications_count: applicationsTotal,

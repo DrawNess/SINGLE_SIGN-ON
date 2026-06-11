@@ -38,8 +38,10 @@ const updateUser = Joi.object({
 // ============================================================
 
 const statsQuery = Joi.object({
-  from: Joi.date().iso().optional(),
-  to:   Joi.date().iso().greater(Joi.ref('from')).optional(),
+  from:     Joi.date().iso().optional(),
+  to:       Joi.date().iso().greater(Joi.ref('from')).optional(),
+  timezone: Joi.string().trim().max(64).default('America/La_Paz'),
+  compare:  Joi.string().valid('previous', 'none').default('previous'),
 });
 
 // ============================================================
