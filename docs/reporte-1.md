@@ -1,7 +1,7 @@
 # Reporte 1: Integración SSO ↔ API-V6
 
-> Generado: 2026-06-10
-> Contexto: estado post deploy producción 2026-06-08/09
+> Última actualización: 2026-06-13
+> Contexto: estado post deploy producción 2026-06-08/09 + bulk emails 2026-06-13
 
 ---
 
@@ -198,19 +198,19 @@ Si todo OK → request continúa. Sino → 401.
 | Password hash | argon2id con memoryCost 64MB |
 | TLS | Let's Encrypt en sso.gemmatex.com (renovación auto) |
 
-## 9. Estado actual prod (al 2026-06-11)
+## 9. Estado actual prod (al 2026-06-13)
 
 | Item | Estado |
 |------|--------|
 | SSO live | `https://sso.gemmatex.com` ✓ |
 | API-V6 integrado | `https://gemmatex.store/api/v1` ✓ |
-| Users migrados | 142 desde DB vieja + ~10 fresh = ~155 total |
+| Users migrados | 142 desde DB vieja + fresh signups = ~165 total |
 | Orders históricas | 34 con customer_uuid + snapshot ✓ |
 | Frontend ecommerce | `gemmatex.com.bo` ✓ |
 | Frontend account | `account.gemmatex.com.bo` ✓ |
 | JWT validation E2E | ✓ verificado con login real |
 | SMTP | Hostinger (limitado ~100/hora — bottleneck conocido) |
-| Migration-welcome emails enviados | 99/142 (41 fallaron por Hostinger ratelimit, pendiente reintento) |
+| **Migration-welcome emails enviados** | **138/142** ✓ (4 casos individuales resueltos: ver sección 12) |
 | Dashboard endpoint `/admin/stats` | ✓ deployed con timezone, semi-open ranges, comparación periodo anterior, data quality |
 | Índices DB para stats | ✓ migration `20260611000001-add-stats-indexes` aplicada |
 
@@ -232,17 +232,62 @@ Todos requieren auth `admin` o `super_admin`.
 
 ## 11. Pendientes y deferred
 
-| Feature | Estado |
-|---------|--------|
-| OAuth Authorization Code Flow (paso 3J) | Deferred |
-| 2FA TOTP | Deferred |
-| OAuth providers (Google/Facebook) | Deferred |
-| Páginas `/accept-invitation`, `/confirm-email-change` | Pendiente frontend |
-| Migrar SMTP a Brevo (sin ratelimit) | Decisión pendiente |
-| Subdominio `api.gemmatex.com.bo` | Deferred |
-| Reintento bulk emails (41 fallidos) | Pendiente (cambiar a Brevo o esperar reset Hostinger) |
-| Heatmap por hora en `/admin/stats` | Pendiente |
-| Engagement buckets en `/admin/stats` | Pendiente |
-| Snapshot histórico semanal de stats | Pendiente (clave para tracking de campañas CI/NIT) |
-| Cohort retention | Deferred |
-| Funnel completo (register→verify→login→order) | Pendiente (requiere JOIN con DB API-V6) |
+### Trabajo Frontend (pendiente del cliente Angular)
+
+| Feature | Prioridad |
+|---------|-----------|
+| Dashboard admin — sección Profile Completeness con CTA campañas | Alta |
+| Dashboard admin — sección Top Failure IPs / Security | Alta |
+| Dashboard admin — sección Logins by Application | Media |
+| Dashboard admin — sección Onboarding (p50/p90) | Media |
+| Dashboard admin — corregir denominadores (% activos vs total) | Baja |
+| Página `/accept-invitation?token=` | Media |
+| Página `/confirm-email-change?token=` | Media |
+
+### Trabajo Backend (pendiente)
+
+| Feature | Esfuerzo | Estado |
+|---------|----------|--------|
+| Flag `imported_from` en users (excluir migración del conteo "nuevos") | 30 min | Pendiente |
+| Endpoint export CSV (`/admin/users?format=csv`, `/admin/audit?format=csv`) | 2h | Pendiente |
+| Migrar SMTP a Brevo (para evitar ratelimit en campañas futuras) | 30 min + Brevo signup | Decidido esperar |
+| Snapshot histórico semanal (tabla `stats_snapshots` + cron) | 2h | Pendiente (alto valor para tracking campañas) |
+| Heatmap por hora en `/admin/stats` | 1h | Pendiente |
+| Engagement buckets (1/2-5/5+ logins por user) | 30 min | Pendiente |
+
+### Deferred (no urgentes)
+
+| Feature | Razón |
+|---------|-------|
+| Phone verification (SMS o WhatsApp) | Costo recurrente — esperar señales reales de fake signups |
+| reCAPTCHA en registro | A evaluar si crecen fake signups |
+| 2FA TOTP | Útil pero no crítico aún |
+| OAuth Google/Facebook login | Ampliaría conversión, no urgente |
+| OAuth Authorization Code Flow real (paso 3J) | JWT flow actual cubre |
+| Subdominio `api.gemmatex.com.bo` | `gemmatex.store` funciona |
+| Cohort retention matrix | Para >1K users |
+| Funnel completo (register→verify→login→order) | Requiere JOIN cross-DB |
+
+## 12. Casos individuales del bulk email (2026-06-13)
+
+De los 142 usuarios migrados:
+
+- **138 recibieron** `migration-welcome` email exitosamente
+- **2 usuarios ya logueados** auto-skipped (no necesitan email):
+  - `nestorcalle1012@gmail.com`
+  - `thegreen1012@gmail.com`
+- **1 user soft-deleted** auto-skipped:
+  - `pruebitsasss@gmail.com` (status=deleted en SSO, era cuenta de prueba)
+- **1 caso typo** pendiente de followup manual:
+  - `ronaldhullpaortuste@gemail.com` (typo: "gemail" en lugar de "gmail")
+  - Acción: WhatsApp manual al teléfono `+59171171968` para confirmar email correcto
+  - Si confirma: `UPDATE users SET email='...' WHERE email='...'` + reenvío con `--only` y `--force`
+
+## 13. Decisiones recientes
+
+| Fecha | Decisión | Razón |
+|-------|----------|-------|
+| 2026-06-13 | Mantener SMTP Hostinger por ahora | Funciona para volumen actual, migrar a Brevo cuando volumen lo justifique |
+| 2026-06-13 | NO implementar phone verification (SMS/WhatsApp) | Costo recurrente; controles actuales (email verify + rate limit) son suficientes |
+| 2026-06-13 | NO implementar reCAPTCHA por ahora | Esperar señales reales de abuso |
+| 2026-06-11 | Migración con flag `migration=initial` NO retroactiva | Aceptar conteo actual; agregar flag cuando se considere prioritario |
