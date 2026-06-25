@@ -20,7 +20,7 @@ const register = Joi.object({
     then: Joi.required(),
     otherwise: Joi.optional(),
   }),
-  birth_date: Joi.date().iso().less('now').optional(),
+  birth_date: Joi.date().iso().less('now').raw().optional(),
   departamento: departamento.optional().allow(null, ''),
   provincia: Joi.string().trim().min(2).max(100).optional().allow(null, ''),
   ciudad: Joi.string().trim().min(2).max(100).optional().allow(null, ''),
@@ -88,7 +88,7 @@ const updateMyProfile = Joi.object({
 
   // Client-only
   phone: Joi.string().trim().max(20).optional(),
-  birth_date: Joi.date().iso().less('now').optional(),
+  birth_date: Joi.date().iso().less('now').raw().optional(),
   document_type: Joi.string().valid('CI', 'NIT').optional().allow(null),
   document_number: Joi.string().trim().max(20).optional().allow(null, ''),
   razon_social: Joi.string().trim().max(200).optional().allow(null, ''),
